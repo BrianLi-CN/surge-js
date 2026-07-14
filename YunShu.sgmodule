@@ -1,11 +1,14 @@
-#!name=YunShu
-#!desc=YunShu
-#!category=brian
+#!name=YunShu Proxy
+#!desc=MCD YunShu SOCKS5 Proxy
+#!author=Brian
+#!category=Proxy
 
 [Proxy]
-YunShu = socks5, 192.168.10.3, 1080
+YunShu = socks5,192.168.10.3,1080
+
+[Proxy Group]
+MCD = select,YunShu,DIRECT
 
 [Rule]
-# MCD
-DOMAIN-SUFFIX,mcd.com.cn,YunShu
-DOMAIN-SUFFIX,mcdchina.net,YunShu
+DOMAIN-SUFFIX,mcd.com.cn,MCD
+DOMAIN-SUFFIX,mcdchina.net,MCD
