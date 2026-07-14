@@ -1,0 +1,11 @@
+#!name=YunShu
+#!desc=YunShu
+#!category=brian
+
+[Proxy]
+YunShu = socks5, 192.168.10.3, 1080
+
+[Rule]
+# MCD
+DOMAIN-SUFFIX,mcd.com.cn,YunShuVPN
+DOMAIN-SUFFIX,mcdchina.net,YunShuVPN
