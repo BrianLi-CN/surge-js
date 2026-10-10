@@ -54,6 +54,7 @@ DOMAIN-SUFFIX,intercom.io
 DOMAIN-SUFFIX,intercomcdn.com
 DOMAIN-SUFFIX,ct.sendgrid.net
 DOMAIN,js.stripe.com
+DOMAIN,o33249.ingest.us.sentry.io
 DOMAIN,o207216.ingest.sentry.io
 DOMAIN,o33249.ingest.sentry.io
 DOMAIN,rum.browser-intake-datadoghq.com
