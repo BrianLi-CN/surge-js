@@ -54,7 +54,8 @@ function requestIP(mode, callback) {
 
     // 使用不同查询标识区分两次请求
     const url = API +
-        "?np_probe=" + mode +
+        "?lang=zh-CN" +
+        "&np_probe=" + mode +
         "&t=" + Date.now();
 
     const options = {
@@ -183,6 +184,107 @@ function getActualPolicy(requestURL, callback) {
     }
 }
 
+
+/**
+ * 运营商中文名称
+ */
+function translateISP(value) {
+    if (!value) return "--";
+
+    const name = String(value);
+    const s = name.toLowerCase();
+
+    const rules = [
+        [/china\s*unicom|china169|cncgroup/,
+            "中国联通"],
+        [/china\s*telecom|chinanet|ctnet/,
+            "中国电信"],
+        [/china\s*mobile|cmnet|cmi\b|cmlink/,
+            "中国移动"],
+        [/china\s*education|cernet/,
+            "中国教育网"],
+        [/china\s*science|cstnet/,
+            "中国科技网"],
+        [/china\s*broadcast|cbnet/,
+            "中国广电"],
+        [/cloudflare/, "Cloudflare"],
+        [/google/, "谷歌"],
+        [/microsoft|azure/, "微软"],
+        [/amazon|aws/, "亚马逊云"],
+        [/alibaba|aliyun/, "阿里云"],
+        [/tencent/, "腾讯云"],
+        [/oracle/, "甲骨文云"],
+        [/digitalocean/, "DigitalOcean"],
+        [/vultr/, "Vultr"],
+        [/akamai/, "Akamai"],
+        [/linode/, "Linode"]
+    ];
+
+    for (const [pattern, label] of rules) {
+        if (pattern.test(s)) return label;
+    }
+
+    return name;
+}
+
+/**
+ * 网络组织中文化
+ * 只处理能够确定含义的名称。
+ */
+function translateOrganization(value) {
+    if (!value) return "--";
+
+    const name = String(value);
+    const s = name.toLowerCase();
+
+    const provinceMap = {
+        jiangsu: "江苏",
+        zhejiang: "浙江",
+        shanghai: "上海",
+        beijing: "北京",
+        guangdong: "广东",
+        shandong: "山东",
+        sichuan: "四川",
+        hubei: "湖北",
+        henan: "河南",
+        anhui: "安徽",
+        fujian: "福建",
+        hunan: "湖南"
+    };
+
+    let province = "";
+
+    for (const key in provinceMap) {
+        if (s.includes(key)) {
+            province = provinceMap[key];
+            break;
+        }
+    }
+
+    let operator = "";
+
+    if (/china\s*unicom|china169/.test(s)) {
+        operator = "中国联通";
+    } else if (/china\s*telecom|chinanet/.test(s)) {
+        operator = "中国电信";
+    } else if (/china\s*mobile|cmnet/.test(s)) {
+        operator = "中国移动";
+    }
+
+    if (operator) {
+        const networkType =
+            /backbone/.test(s) ? "骨干网" :
+                /province|provincial/.test(s) ? "省级网络" :
+                    /network/.test(s) ? "网络" : "";
+
+        return province + operator + networkType;
+    }
+
+    // 无法确定的组织保留原名
+    return name;
+}
+
+
 function addExit(lines, title, result) {
     lines.push("");
     lines.push("━━━ " + title + " ━━━");
@@ -207,15 +309,17 @@ function addExit(lines, title, result) {
     lines.push(
         "位置：" +
         [
-            d.flag && d.flag.emoji,
-            d.country,
-            d.region,
-            d.city
-        ].filter(Boolean).join(" ")
+            data.flag && data.flag.emoji,
+            data.country,
+            data.region,
+            data.city
+        ].filter(Boolean).join(" · ")
     );
 
+
     lines.push(
-        "运营商：" + shorten(conn.isp)
+        "运营商：" +
+        translateISP(conn.isp)
     );
 
     lines.push(
@@ -224,7 +328,13 @@ function addExit(lines, title, result) {
     );
 
     lines.push(
-        "组织：" + shorten(conn.org)
+        "网络组织：" +
+        translateOrganization(conn.org)
+    );
+
+    lines.push(
+        "ASN：" +
+        (conn.asn ? "AS" + conn.asn : "--")
     );
 
     lines.push(
