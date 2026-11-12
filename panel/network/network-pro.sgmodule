@@ -1,6 +1,5 @@
 #!name=🌐 Network Pro · 自动策略版
 #!desc=自动识别 Surge 代理策略组和选中节点，监测本地网络、DNS、直连与代理出口;
-#!system=mac
 #!category=Network
 #!arguments=SHOW_SSID:true,REFRESH:300
 #!arguments-desc=SHOW_SSID 是否显示Wi-Fi；REFRESH 刷新间隔秒数

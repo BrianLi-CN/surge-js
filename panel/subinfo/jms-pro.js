@@ -306,7 +306,7 @@ function render(data) {
 
         lines.push(
             "⏳ 剩余：" + reset.days +
-            " 个日历天"
+            " 天"
         );
     } else {
         lines.push("重置日期：API 未提供");
