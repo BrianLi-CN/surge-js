@@ -1,244 +1,201 @@
 
 /**
- * Network Pro v1.2
+ * Network Pro v1.5
  * Surge Mac 6.12.0
  *
- * 自动检测：
- * - 本地 IP / 网关 / Wi-Fi / DNS
- * - 直连出口 IP、地理位置、ISP、ASN
- * - 当前主代理策略及出口 IP
+ * 参考 xream network-info 请求记录识别方式
  *
- * 只读，不修改任何 Surge 配置
+ * 直连检测：强制 DIRECT
+ * 代理检测：遵循 Surge 规则
+ * 节点信息：读取近期请求记录
+ *
+ * 不修改 Surge 配置
  */
 
-const SHOW_SSID =
-    String(typeof $argument === "string"
-        ? $argument : "true").trim() !== "false";
-
-const API = "https://ipwho.is/";
-const network = typeof $network !== "undefined"
+const net = typeof $network !== "undefined"
     ? $network : {};
+
 const env = typeof $environment !== "undefined"
     ? $environment : {};
 
-const v4 = network.v4 || {};
-const v6 = network.v6 || {};
-const wifi = network.wifi || {};
+const v4 = net.v4 || {};
+const v6 = net.v6 || {};
+const wifi = net.wifi || {};
+
+const API = "https://ipwho.is/";
+const TIMEOUT = 10;
 
 const state = {
     direct: null,
     proxy: null,
-    policy: null,
-    selected: null,
-    detail: null,
-    reason: "",
-    mode: "rule"
+    policy: "",
+    remoteAddress: "",
+    traceError: ""
 };
 
-function str(v, fallback = "--") {
-    return v === undefined || v === null || v === ""
-        ? fallback : String(v);
+function str(value, fallback = "--") {
+    if (value === undefined ||
+        value === null ||
+        value === "") {
+        return fallback;
+    }
+    return String(value);
 }
 
-function short(v, limit = 42) {
-    const s = str(v);
-    return s.length > limit
-        ? s.slice(0, limit - 1) + "…"
+function shorten(value, max = 46) {
+    const s = str(value);
+    return s.length > max
+        ? s.slice(0, max - 1) + "…"
         : s;
 }
 
-function apiGet(path) {
-    return new Promise((resolve) => {
+function requestIP(mode, callback) {
+    const start = Date.now();
+
+    // 使用不同查询标识区分两次请求
+    const url = API +
+        "?np_probe=" + mode +
+        "&t=" + Date.now();
+
+    const options = {
+        url: url,
+        timeout: TIMEOUT,
+        headers: {
+            Accept: "application/json",
+            "Cache-Control": "no-cache"
+        }
+    };
+
+    // 直连使用 DIRECT
+    // 代理探测不指定 policy，遵循 Surge 规则
+    if (mode === "direct") {
+        options.policy = "DIRECT";
+    }
+
+    $httpClient.get(options, function(
+        error, response, body
+    ) {
+        const ms = Date.now() - start;
+
+        if (error) {
+            callback({
+                ok: false,
+                error: String(error),
+                ms: ms
+            }, url);
+            return;
+        }
+
         try {
-            $httpAPI("GET", path, null, result => {
-                resolve(result || {});
-            });
-        } catch (e) {
-            resolve({});
-        }
-    });
-}
+            const status = Number(
+                response &&
+                (response.status || response.statusCode)
+            );
 
-function getSelections() {
-    try {
-        const d = $surge.selectGroupDetails();
-        return d && d.decisions ? d.decisions : {};
-    } catch (e) {
-        return {};
-    }
-}
-
-function requestIP(policy) {
-    return new Promise(resolve => {
-        const start = Date.now();
-
-        $httpClient.get({
-            url: API,
-            policy: policy,
-            timeout: 10,
-            headers: {
-                Accept: "application/json"
-            }
-        }, (error, response, body) => {
-            const ms = Date.now() - start;
-
-            if (error) {
-                resolve({
-                    ok: false,
-                    ms,
-                    error: String(error)
-                });
-                return;
+            if (status && status !== 200) {
+                throw new Error("HTTP " + status);
             }
 
-            try {
-                const status = Number(
-                    response && (
-                        response.status || response.statusCode
-                    )
+            const data = typeof body === "string"
+                ? JSON.parse(body)
+                : body;
+
+            if (!data ||
+                data.success !== true ||
+                !data.ip) {
+                throw new Error(
+                    str(data && data.message, "IP 数据无效")
                 );
-
-                if (status !== 200) {
-                    throw new Error("HTTP " + status);
-                }
-
-                const data = typeof body === "string"
-                    ? JSON.parse(body) : body;
-
-                if (!data || data.success !== true || !data.ip) {
-                    throw new Error(
-                        str(data && data.message, "IP 信息无效")
-                    );
-                }
-
-                resolve({ok: true, ms, data});
-            } catch (e) {
-                resolve({
-                    ok: false,
-                    ms,
-                    error: String(e.message || e)
-                });
             }
-        });
+
+            callback({
+                ok: true,
+                data: data,
+                ms: ms
+            }, url);
+
+        } catch (e) {
+            callback({
+                ok: false,
+                error: String(e.message || e),
+                ms: ms
+            }, url);
+        }
     });
 }
 
-// 获取可用代理名称
-function getAvailablePolicies(data) {
-    const names = new Set(["DIRECT"]);
+// 根据真实请求记录获取策略
+function getActualPolicy(requestURL, callback) {
+    if (typeof $httpAPI === "undefined") {
+        callback(null, "HTTP API 不可用");
+        return;
+    }
 
-    (data.proxies || []).forEach(n => names.add(n));
-    (data["policy-groups"] || []).forEach(
-        n => names.add(n)
-    );
+    try {
+        $httpAPI(
+            "GET",
+            "/v1/requests/recent",
+            null,
+            function(result) {
+                try {
+                    const requests =
+                        result && result.requests;
 
-    return names;
+                    if (!Array.isArray(requests)) {
+                        throw new Error(
+                            "无法读取最近请求列表"
+                        );
+                    }
+
+                    const marker = requestURL
+                        .match(/np_probe=([^&]+)/);
+
+                    const probe = marker
+                        ? "np_probe=" + marker[1]
+                        : "";
+
+                    // 只查找本次检测对应的请求
+                    const request = requests.find(r => {
+                        const url = String(r.URL || r.url || "");
+                        return url.includes("ipwho.is") &&
+                            url.includes(probe);
+                    });
+
+                    if (!request) {
+                        throw new Error(
+                            "未找到本次出口探测请求"
+                        );
+                    }
+
+                    callback({
+                        policy: request.policyName || "",
+                        remoteAddress:
+                            request.remoteAddress || ""
+                    }, null);
+
+                } catch (e) {
+                    callback(null, String(e.message || e));
+                }
+            }
+        );
+    } catch (e) {
+        callback(null, String(e));
+    }
 }
 
-// 获取当前主策略
-async function detectPolicy() {
-    const [outbound, policies] = await Promise.all([
-        apiGet("/v1/outbound"),
-        apiGet("/v1/policies?include_external=true")
-    ]);
-
-    state.mode = outbound.mode || "rule";
-
-    const valid = getAvailablePolicies(policies);
-    const selections = getSelections();
-
-    if (state.mode === "direct") {
-        state.selected = "DIRECT";
-        state.reason = "当前为全局直连模式";
-        return null;
-    }
-
-    if (state.mode === "proxy") {
-        const global = await apiGet("/v1/outbound/global");
-        const name = global.policy;
-
-        if (name && valid.has(name)) {
-            state.policy = name;
-            state.selected = name;
-            return name;
-        }
-
-        state.reason = "无法识别全局代理策略";
-        return null;
-    }
-
-    // 规则模式：优先使用主选择组
-    const decisions = selections;
-    const keys = Object.keys(decisions);
-
-    const preferred = [
-        "Proxy", "PROXY", "proxy",
-        "节点选择", "代理选择",
-        "🚀 节点选择", "🚀 节点代理"
-    ];
-
-    let main = preferred.find(
-        n => Object.prototype.hasOwnProperty.call(
-            decisions, n
-        )
-    );
-
-    if (!main && keys.length === 1) {
-        main = keys[0];
-    }
-
-    if (!main) {
-        state.reason = "规则模式没有唯一的主代理选择";
-        return null;
-    }
-
-    // 当前选中的策略，如 auto
-    const chosen = decisions[main];
-
-    state.selected = chosen || main;
-
-    // 如果主组确实存在，优先通过主组检测
-    if (valid.has(main)) {
-        state.policy = main;
-        return main;
-    }
-
-    // 你的截图属于这种情况：
-    // Proxy 不存在，但选择结果为 auto
-    if (chosen && valid.has(chosen)) {
-        state.policy = chosen;
-        return chosen;
-    }
-
-    // 某些策略属于外部策略组，需使用 identifier
-    const external = policies["external-policies"] || [];
-    const match = external.find(
-        item => item.name === chosen && item.identifier
-    );
-
-    if (match) {
-        state.policy = match.identifier;
-        return match.identifier;
-    }
-
-    state.reason =
-        "当前选择无法映射到可测试的代理策略";
-
-    return null;
-}
-
-// 公网出口信息
 function addExit(lines, title, result) {
     lines.push("");
-    lines.push(title);
+    lines.push("━━━ " + title + " ━━━");
 
     if (!result) {
-        lines.push("  未检测");
+        lines.push("状态：未检测");
         return;
     }
 
     if (!result.ok) {
-        lines.push("  ❌ " + short(result.error, 70));
+        lines.push(
+            "❌ " + shorten(result.error, 65)
+        );
         return;
     }
 
@@ -247,21 +204,32 @@ function addExit(lines, title, result) {
 
     lines.push("IP：" + str(d.ip));
 
-    lines.push("位置：" + [
-        d.flag && d.flag.emoji,
-        d.country,
-        d.region,
-        d.city
-    ].filter(Boolean).join(" "));
-
-    lines.push("运营商：" + short(conn.isp));
     lines.push(
-        "ASN：" + (
-            conn.asn ? "AS" + conn.asn : "--"
-        )
+        "位置：" +
+        [
+            d.flag && d.flag.emoji,
+            d.country,
+            d.region,
+            d.city
+        ].filter(Boolean).join(" ")
     );
-    lines.push("组织：" + short(conn.org));
-    lines.push("HTTP 耗时：" + result.ms + " ms");
+
+    lines.push(
+        "运营商：" + shorten(conn.isp)
+    );
+
+    lines.push(
+        "ASN：" +
+        (conn.asn ? "AS" + conn.asn : "--")
+    );
+
+    lines.push(
+        "组织：" + shorten(conn.org)
+    );
+
+    lines.push(
+        "HTTP 耗时：" + result.ms + " ms"
+    );
 }
 
 function render() {
@@ -269,25 +237,23 @@ function render() {
 
     lines.push("━━━ 🖥 本地网络 ━━━");
 
-    if (SHOW_SSID) {
-        const ssid = wifi.ssid || wifi.SSID;
-
-        lines.push(
-            "📶 Wi-Fi：" +
-            (ssid ? ssid : "未获取（检查系统权限）")
-        );
-    }
-
     lines.push(
-        "🔌 网络接口：" + str(v4.primaryInterface)
+        "📶 Wi-Fi：" + str(wifi.ssid)
     );
 
     lines.push(
-        "🏠 本机 IPv4：" + str(v4.primaryAddress)
+        "🔌 网络接口：" +
+        str(v4.primaryInterface)
     );
 
     lines.push(
-        "🚪 默认网关：" + str(v4.primaryRouter)
+        "🏠 本机 IPv4：" +
+        str(v4.primaryAddress)
+    );
+
+    lines.push(
+        "🚪 默认网关：" +
+        str(v4.primaryRouter)
     );
 
     lines.push(
@@ -299,100 +265,110 @@ function render() {
     lines.push("━━━ 🧭 DNS ━━━");
 
     lines.push(
-        Array.isArray(network.dns) && network.dns.length
-            ? network.dns.join(" · ")
+        Array.isArray(net.dns) && net.dns.length
+            ? net.dns.join(" · ")
             : "未获取"
     );
 
     addExit(
-        lines, "━━━ 🌍 直连出口 ━━━",
+        lines,
+        "🌍 直连出口",
         state.direct
+    );
+
+    addExit(
+        lines,
+        "🛡 代理出口",
+        state.proxy
     );
 
     lines.push("");
     lines.push("━━━ 🔀 当前代理 ━━━");
 
-    const modes = {
-        rule: "规则模式",
-        proxy: "全局代理",
-        direct: "全局直连"
-    };
-
     lines.push(
-        "出站模式：" +
-        (modes[state.mode] || state.mode)
+        "本次请求策略：" +
+        str(state.policy, "未识别")
     );
 
-    lines.push(
-        "当前选择：" + str(state.selected)
-    );
-
-    if (state.reason) {
-        lines.push("提示：" + state.reason);
+    if (state.traceError) {
+        lines.push(
+            "记录查询：" +
+            shorten(state.traceError, 55)
+        );
     }
 
-    if (state.proxy) {
-        addExit(
-            lines, "━━━ 🛡 代理出口 ━━━",
-            state.proxy
+    if (
+        state.direct && state.direct.ok &&
+        state.proxy && state.proxy.ok
+    ) {
+        const same =
+            state.direct.data.ip ===
+            state.proxy.data.ip;
+
+        lines.push(
+            "出口 IP：" +
+            (same
+                ? "⚠️ 与直连相同"
+                : "✅ 与直连不同")
         );
     }
 
     lines.push("");
     lines.push("━━━ ⚙️ 系统 ━━━");
-    lines.push("系统：" + str(env.system));
+
     lines.push(
-        "Surge：" + str(env["surge-version"])
-    );
-    lines.push(
-        "Build：" + str(env["surge-build"])
+        "系统：" + str(env.system)
     );
 
     lines.push(
-        "更新：" + new Date().toLocaleString(
-            "zh-CN", {hour12: false}
+        "Surge：" +
+        str(env["surge-version"])
+    );
+
+    lines.push(
+        "Build：" +
+        str(env["surge-build"])
+    );
+
+    lines.push(
+        "更新：" +
+        new Date().toLocaleString(
+            "zh-CN",
+            {hour12: false}
         )
     );
 
-
-    const hasError =
+    const failed =
         (state.direct && !state.direct.ok) ||
         (state.proxy && !state.proxy.ok);
 
     $done({
         title: "Network Pro · 网络监控",
         content: lines.join("\n"),
-        icon: hasError
-            ? "network.slash"
-            : "network",
-        "icon-color": hasError
+        icon: failed ? "network.slash" : "network",
+        "icon-color": failed
             ? "#EF4444"
             : "#3B82F6"
     });
-
 }
 
-async function main() {
-    try {
-        const directTask = requestIP("DIRECT");
-        const policy = await detectPolicy();
+// 直连请求先执行，再执行代理请求
+requestIP("direct", function(result) {
+    state.direct = result;
 
-        const proxyTask = policy &&
-        policy !== "DIRECT"
-            ? requestIP(policy)
-            : Promise.resolve(null);
+    requestIP("proxy", function(proxyResult, url) {
+        state.proxy = proxyResult;
 
-        [state.direct, state.proxy] =
-            await Promise.all([directTask, proxyTask]);
+        // 无论 IP 查询是否成功，尝试读取策略
+        getActualPolicy(url, function(info, error) {
+            if (info) {
+                state.policy = info.policy;
+                state.remoteAddress = info.remoteAddress;
+            } else {
+                state.traceError = error || "";
+            }
 
-        render();
-    } catch (e) {
-        $done({
-            title: "Network Pro 运行异常",
-            content: String(e),
-            style: "error"
+            render();
         });
-    }
-}
-
-main();
+    });
+});
