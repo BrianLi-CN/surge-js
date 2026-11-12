@@ -1,6 +1,6 @@
 
 #!name=💜 Just My Socks Pro
-#!desc=JMS 套餐流量监控｜总量、已用、剩余、使用率、重置倒计时;
+#!desc=JMS 套餐流量监控｜总量、已用、剩余、使用率、重置倒计时
 #!system=mac
 #!category=SubInfo
 #!arguments=API_URL,PLAN_NAME:LA 500,REFRESH:1800,REQUEST_POLICY:DIRECT
