@@ -8,5 +8,5 @@
 彩云天气 = title="🌤 彩云天气", content="请配置 API Token 后刷新", style=info, script-name=caiyun-weather, update-interval=600
 
 [Script]
-caiyun-weather = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/caiyun-weather.js, argument="{{{API_TOKEN}}}|{{{LOCATION_MODE}}}|{{{LONGITUDE}}}|{{{LATITUDE}}}|{{{CITY_NAME}}}", timeout=25
+caiyun-weather = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/wether/caiyun-weather.js, argument="{{{API_TOKEN}}}|{{{LOCATION_MODE}}}|{{{LONGITUDE}}}|{{{LATITUDE}}}|{{{CITY_NAME}}}", timeout=25
 

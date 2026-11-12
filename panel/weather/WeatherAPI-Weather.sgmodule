@@ -9,4 +9,4 @@
 WeatherAPI天气 = title="🌤 WeatherAPI 实时天气", content="请填写模块 API_KEY，首次使用点击刷新。", style=info, script-name=weatherapi-panel, update-interval={{{REFRESH}}}
 
 [Script]
-weatherapi-panel = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/weatherapi-panel.js, argument="{{{API_KEY}}}|{{{LOCATION}}}", timeout=20
+weatherapi-panel = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/wether/weatherapi-panel.js, argument="{{{API_KEY}}}|{{{LOCATION}}}", timeout=20

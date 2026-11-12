@@ -1,11 +1,11 @@
 #!name=JustMySocks信息
 #!desc=JustMySocks用量监控
-#!category=brian
+#!category=SubInfo
 #!arguments=URL:https%3A%2F%2Fjustmysocks6.net%2Fmembers%2Fgetbwcounter.php,EXPIRE:2026-03-27,TITLE:JustMySocks,ICON:paperplane,COLOR:#007aff,UPDATE-INTERVAL:-1
 
 [Script]
 # Panel
-Sub_info = type=generic,timeout=120,script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/sub_info_panel.js,argument="url={{{URL}}}&expire={{{EXPIRE}}}&title={{{TITLE}}}&icon={{{ICON}}}&color={{{COLOR}}}"
+Sub_info = type=generic,timeout=120,script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/subinfo/sub_info_panel.js,argument="url={{{URL}}}&expire={{{EXPIRE}}}&title={{{TITLE}}}&icon={{{ICON}}}&color={{{COLOR}}}"
 
 [Panel]
 Sub_info = script-name=Sub_info,update-interval={{{UPDATE-INTERVAL}}}

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="c5c85525-968d-4404-ad9c-74daf95ed2b4" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/conf/local-proxy-shadowrocket.conf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/conf/local-proxy-surge.conf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/panel/network/Network-Pro.sgmodule" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI.list" beforeDir="false" afterPath="$PROJECT_DIR$/rule/AI.list" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AI.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/rule/AI.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Caiyun-Weather.sgmodule" beforeDir="false" afterPath="$PROJECT_DIR$/panel/weather/Caiyun-Weather.sgmodule" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WeatherAPI-Weather.sgmodule" beforeDir="false" afterPath="$PROJECT_DIR$/panel/weather/WeatherAPI-Weather.sgmodule" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/caiyun-weather.js" beforeDir="false" afterPath="$PROJECT_DIR$/panel/weather/caiyun-weather.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/defult.conf" beforeDir="false" afterPath="$PROJECT_DIR$/conf/defult.conf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sub_info_panel.js" beforeDir="false" afterPath="$PROJECT_DIR$/panel/subinfo/sub_info_panel.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sun-info-panel.sgmodule" beforeDir="false" afterPath="$PROJECT_DIR$/panel/subinfo/sun-info-panel.sgmodule" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/timecard.js" beforeDir="false" afterPath="$PROJECT_DIR$/panel/general/timecard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/weatherapi-panel.js" beforeDir="false" afterPath="$PROJECT_DIR$/panel/weather/weatherapi-panel.js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="customMavenHome" value="$USER_HOME$/tools/apache-maven-3.9.11" />
+        <option name="localRepository" value="$USER_HOME$/work/repository" />
+        <option name="mavenHomeTypeForPersistence" value="CUSTOM" />
+        <option name="userSettingsFile" value="$USER_HOME$/tools/apache-maven-3.9.11/conf/settings.xml" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0" />
+      <entry key="S2" value="1.0" />
+      <entry key="S5" value="1.0000000052455873" />
+      <entry key="S10" value="1.000088315866651" />
+      <entry key="S30" value="1.0820099189157173" />
+      <entry key="S60" value="1.4910057753619292" />
+      <entry key="M2" value="2.281027770424398" />
+      <entry key="M5" value="3.6207068598802636" />
+      <entry key="M10" value="4.5370334741144" />
+      <entry key="M15" value="4.947581359969605" />
+      <entry key="M30" value="5.429986584713314" />
+      <entry key="H1" value="5.702921693033936" />
+      <entry key="H2" value="5.848289487761754" />
+      <entry key="H4" value="5.923331815555605" />
+      <entry key="D1" value="5.987107313557038" />
+      <entry key="W1" value="5.998155356647611" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.9526379980439373" />
+      <entry key="MS500" value="0.9903428719330246" />
+      <entry key="S2" value="0.9975769252644544" />
+      <entry key="S5" value="0.9990300698801091" />
+      <entry key="S10" value="0.9996031918199773" />
+      <entry key="S30" value="1.0818345942435905" />
+      <entry key="S60" value="1.4908294468563588" />
+      <entry key="M2" value="2.2802124192905944" />
+      <entry key="M5" value="3.618572492612021" />
+      <entry key="M10" value="4.534993125766264" />
+      <entry key="M15" value="4.945891357878387" />
+      <entry key="M30" value="5.428936320059711" />
+      <entry key="H1" value="5.702336170402306" />
+      <entry key="H2" value="5.847980341941892" />
+      <entry key="H4" value="5.923172975097632" />
+      <entry key="D1" value="5.98708023236513" />
+      <entry key="W1" value="5.9981514728213945" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4,
+  "fromUser": false
+}]]></component>
+  <component name="ProjectId" id="3M00Y1FlKHJgYfV33lNfem03cBy" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/brian/GitHub/surge-js/conf",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.jshint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.jshint": "",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "项目",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "Errors"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/conf" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/panel/general" />
+      <recent name="$PROJECT_DIR$/panel/subinfo" />
+      <recent name="$PROJECT_DIR$/panel/weather" />
+      <recent name="$PROJECT_DIR$/rule" />
+      <recent name="$PROJECT_DIR$/conf" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-30f59d01ecdd-ac68fc9d2b05-intellij.indexing.shared.core-IU-263.7307.200" />
+        <option value="bundled-js-predefined-d6986cc7102b-56aff7b04f6f-JavaScript-IU-263.7307.200" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="c5c85525-968d-4404-ad9c-74daf95ed2b4" name="Changes" comment="" />
+      <created>1794472221583</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1794472221583</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
