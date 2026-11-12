@@ -285,6 +285,7 @@ function translateOrganization(value) {
 }
 
 
+
 function addExit(lines, title, result) {
     lines.push("");
     lines.push("━━━ " + title + " ━━━");
@@ -301,46 +302,50 @@ function addExit(lines, title, result) {
         return;
     }
 
-    const d = result.data;
+    // 统一使用 d 引用 API 返回数据
+    const d = result.data || {};
     const conn = d.connection || {};
 
-    lines.push("IP：" + str(d.ip));
-
+    // 公网 IP
     lines.push(
-        "位置：" +
-        [
-            data.flag && data.flag.emoji,
-            data.country,
-            data.region,
-            data.city
-        ].filter(Boolean).join(" · ")
+        "IP：" + str(d.ip)
     );
 
+    // 中文位置信息
+    const location = [
+        d.flag && d.flag.emoji,
+        d.country,
+        d.region,
+        d.city
+    ].filter(Boolean).join(" · ");
 
     lines.push(
-        "运营商：" +
-        translateISP(conn.isp)
+        "位置：" + (location || "--")
     );
 
+    // 运营商中文化
+    lines.push(
+        "运营商：" + translateISP(conn.isp)
+    );
+
+    // ASN
     lines.push(
         "ASN：" +
         (conn.asn ? "AS" + conn.asn : "--")
     );
 
+    // 网络组织中文化
     lines.push(
         "网络组织：" +
         translateOrganization(conn.org)
     );
 
-    lines.push(
-        "ASN：" +
-        (conn.asn ? "AS" + conn.asn : "--")
-    );
-
+    // HTTP 请求耗时
     lines.push(
         "HTTP 耗时：" + result.ms + " ms"
     );
 }
+
 
 function render() {
     const lines = [];
