@@ -9,4 +9,4 @@
 YunShu Pro = title="YunShu Pro · 内网监控", content="首次使用请刷新面板", icon=network.badge.shield.half.filled, icon-color="#14B8A6", script-name=yunshu-pro, update-interval={{{REFRESH}}}
 
 [Script]
-yunshu-pro = type=generic, script-path=yunshu-pro.js, argument="{{{PROXY_NAME}}}|{{{PUBLIC_URL}}}|{{{INTERNAL_URL}}}|{{{INTERNAL_IP_URL}}}", timeout=35, debug=true
+yunshu-pro = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/yunshu-pro.js, argument="{{{PROXY_NAME}}}|{{{PUBLIC_URL}}}|{{{INTERNAL_URL}}}|{{{INTERNAL_IP_URL}}}", timeout=35, debug=true
