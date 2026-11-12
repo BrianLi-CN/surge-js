@@ -1,0 +1,12 @@
+
+#!name=🌤 WeatherAPI · 自动定位天气
+#!desc=实时天气、体感温度、湿度、降水、风速、空气质量；自动IP定位，支持手动城市
+#!system=mac
+#!arguments=API_KEY,LOCATION:AUTO,REFRESH:600
+#!arguments-desc=API_KEY 填写 WeatherAPI.com 免费密钥；LOCATION 填 AUTO 自动IP定位，或填写城市名称/经纬度；REFRESH 为刷新间隔秒数。
+
+[Panel]
+WeatherAPI天气 = title="🌤 WeatherAPI 实时天气", content="请填写模块 API_KEY，首次使用点击刷新。", style=info, script-name=weatherapi-panel, update-interval={{{REFRESH}}}
+
+[Script]
+weatherapi-panel = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/weatherapi-panel.js, argument="{{{API_KEY}}}|{{{LOCATION}}}", timeout=20
