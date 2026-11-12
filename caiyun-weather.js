@@ -11,7 +11,7 @@
 // =========================
 
 // 替换为你的彩云天气 API Token
-const API_TOKEN = "YOUR_CAIYUN_API_TOKEN";
+const API_TOKEN = "ry5OWkwlJfqbualx";
 
 // 南京市中心附近坐标（GCJ-02 近似值）
 const CITY = "南京";
