@@ -1,0 +1,9 @@
+
+#!name=🌤 彩云天气 · 南京
+#!desc=彩云天气实时天气信息面板｜温度、体感、湿度、降水、风速、空气质量
+
+[Panel]
+彩云天气 = title="南京 · 彩云天气", content="正在等待首次刷新...", style=info, script-name=caiyun-weather, update-interval=600
+
+[Script]
+caiyun-weather = type=generic, script-path=/Users/YOUR_USERNAME/SurgeScripts/caiyun-weather.js, timeout=20
