@@ -1,6 +1,6 @@
 #!name=🌤 彩云天气 · 自动定位
 #!desc=彩云天气实时天气面板，支持模块参数设置和自动定位
-#!category=Panels
+#!category=Weather
 #!arguments=API_TOKEN,LOCATION_MODE:AUTO,LONGITUDE:118.7969,LATITUDE:32.0603,CITY_NAME:南京
 #!arguments-desc=API_TOKEN 填写彩云天气密钥；LOCATION_MODE 填 AUTO 自动定位或 MANUAL 手动定位；其余参数用于手动定位或自动定位失败时回退。
 
