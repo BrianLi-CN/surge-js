@@ -149,6 +149,48 @@ function weatherEmoji(code, isDay) {
   return "🌤️";
 }
 
+
+function weatherIcon(code, isDay) {
+  if (code === 1000) {
+    return isDay
+        ? "sun.max.fill"
+        : "moon.stars.fill";
+  }
+
+  if ([1003, 1006, 1009].includes(code)) {
+    return isDay
+        ? "cloud.sun.fill"
+        : "cloud.moon.fill";
+  }
+
+  if ([1030, 1135, 1147].includes(code)) {
+    return "cloud.fog.fill";
+  }
+
+  if ([1087, 1273, 1276, 1279, 1282].includes(code)) {
+    return "cloud.bolt.rain.fill";
+  }
+
+  if (
+      [1066, 1069, 1072, 1114, 1117].includes(code) ||
+      (code >= 1204 && code <= 1237) ||
+      (code >= 1255 && code <= 1264)
+  ) {
+    return "cloud.snow.fill";
+  }
+
+  if (
+      [1063, 1150, 1153, 1168, 1171].includes(code) ||
+      (code >= 1180 && code <= 1201) ||
+      [1240, 1243, 1246, 1249, 1252].includes(code)
+  ) {
+    return "cloud.rain.fill";
+  }
+
+  return "cloud.sun.fill";
+}
+
+
 // 统一输出错误
 function fail(message) {
   $done({
@@ -429,6 +471,10 @@ function renderPanel(location, current) {
   $done({
     title: title,
     content: content,
-    style: epa.style
+    icon: weatherIcon(
+        condition.code,
+        current.is_day === 1
+    ),
+    "icon-color": "#38BDF8"
   });
 }
