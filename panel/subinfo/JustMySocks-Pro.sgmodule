@@ -10,4 +10,4 @@
 JMS Pro = title="Just My Socks · 订阅监控", content="请设置 Bandwidth Counter API 地址后刷新", icon=server.rack, icon-color="#8B5CF6", script-name=jms-pro, update-interval={{{REFRESH}}}
 
 [Script]
-jms-pro = type=generic, script-path=jms-pro.js, argument="{{{API_URL}}}|{{{PLAN_NAME}}}|{{{REQUEST_POLICY}}}", timeout=20
+jms-pro = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/subinfo/jms-pro.js, argument="{{{API_URL}}}|{{{PLAN_NAME}}}|{{{REQUEST_POLICY}}}", timeout=20
