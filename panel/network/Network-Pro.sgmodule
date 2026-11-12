@@ -9,5 +9,5 @@
 Network Pro = title="Network Pro · 网络监控", content="正在检测网络...", icon=network, icon-color="#3B82F6", script-name=network-pro, update-interval={{{REFRESH}}}
 
 [Script]
-network-pro-script = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/network-pro.js, argument="{{{SHOW_SSID}}}", timeout=30
+network-pro-script = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/network-pro.js, argument="{{{SHOW_SSID}}}", timeout=45, debug=true
 
