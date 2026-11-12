@@ -1,9 +1,9 @@
 #!name=YunShu Pro · 内网监控
-#!desc=监控 Surge、GOST SOCKS5 代理、企业内网 API 与域名连通性
+#!desc=监控 Surge、GOST SOCKS5、云枢 VPN 内网 API 和域名连通性
 #!system=mac
 #!category=Network
-#!arguments=PROXY_NAME:🪜 YunShu,PUBLIC_URL:http://www.gstatic.com/generate_204,INTERNAL_URL:,INTERNAL_IP_URL:,REFRESH:300
-#!arguments-desc=PROXY_NAME 为 Surge 中的 YunShu 策略名称；PUBLIC_URL 为代理公网探测地址；INTERNAL_URL 为内网域名健康检查 URL；INTERNAL_IP_URL 为内网 IP HTTP 检测地址；REFRESH 为刷新秒数。
+#!arguments=PROXY_NAME:🪜 YunShu,PUBLIC_URL:http://www.gstatic.com/generate_204,INTERNAL_URL,INTERNAL_IP_URL,REFRESH:300
+#!arguments-desc=PROXY_NAME 为 Surge 代理名称；PUBLIC_URL 为公网检测地址；INTERNAL_URL 为内网域名 HTTP 地址；INTERNAL_IP_URL 为内网 IP HTTP 地址；REFRESH 为刷新间隔秒数。
 
 [Panel]
 YunShu Pro = title="YunShu Pro · 内网监控", content="首次使用请刷新面板", icon=network.badge.shield.half.filled, icon-color="#14B8A6", script-name=yunshu-pro, update-interval={{{REFRESH}}}
