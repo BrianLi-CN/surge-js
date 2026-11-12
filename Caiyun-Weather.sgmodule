@@ -1,9 +1,12 @@
-
-#!name=🌤 彩云天气 · 南京
-#!desc=彩云天气实时天气信息面板｜温度、体感、湿度、降水、风速、空气质量
+#!name=🌤 彩云天气 · 自动定位
+#!desc=彩云天气实时天气面板，支持模块参数设置和自动定位
+#!category=Panels
+#!arguments=API_TOKEN,LOCATION_MODE:AUTO,LONGITUDE:118.7969,LATITUDE:32.0603,CITY_NAME:南京
+#!arguments-desc=API_TOKEN 填写彩云天气密钥；LOCATION_MODE 填 AUTO 自动定位或 MANUAL 手动定位；其余参数用于手动定位或自动定位失败时回退。
 
 [Panel]
-彩云天气 = title="南京 · 彩云天气", content="正在等待首次刷新...", style=info, script-name=caiyun-weather, update-interval=600
+彩云天气 = title="🌤 彩云天气", content="请配置 API Token 后刷新", style=info, script-name=caiyun-weather, update-interval=600
 
 [Script]
-caiyun-weather = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/caiyun-weather.js, timeout=20
+caiyun-weather = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/caiyun-weather.js, argument="{{{API_TOKEN}}}|{{{LOCATION_MODE}}}|{{{LONGITUDE}}}|{{{LATITUDE}}}|{{{CITY_NAME}}}", timeout=25
+
