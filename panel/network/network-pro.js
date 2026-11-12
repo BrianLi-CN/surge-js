@@ -1,452 +1,419 @@
 
 /**
- * Network Pro - Surge Information Panel
+ * Network Pro - Auto Policy
  * Surge Mac 6.12.0+
  *
- * 功能：
- * 本地 IPv4 / IPv6 / Wi-Fi / Gateway / DNS
- * 直连和代理公网 IP、位置、ISP、ASN
- * HTTP 探测耗时、策略组选择、版本信息
- *
- * 不需要 API Key，不修改任何 Surge 配置。
+ * 只读网络信息面板
+ * 不修改 Surge 策略、DNS 或代理配置
  */
 
-// ================================
-// 1. 模块参数
-// ================================
-
-const args = String(
-    typeof $argument === "string"
+const SHOW_SSID =
+    String(typeof $argument === "string"
         ? $argument
-        : ""
-).split("|");
+        : "true").toLowerCase() !== "false";
 
-const CONFIG = {
-    proxy: (args[0] || "DIRECT").trim(),
-    group: (args[1] || "PROXY").trim(),
-    showSSID: (args[2] || "true")
-        .trim().toLowerCase() === "true"
+const IP_API = "https://ipwho.is/";
+const TIMEOUT = 10;
+
+const net = typeof $network !== "undefined"
+    ? $network : {};
+
+const env = typeof $environment !== "undefined"
+    ? $environment : {};
+
+const v4 = net.v4 || {};
+const v6 = net.v6 || {};
+const wifi = net.wifi || {};
+const dns = Array.isArray(net.dns) ? net.dns : [];
+
+const result = {
+    direct: null,
+    proxy: null,
+    mode: "unknown",
+    policy: null,
+    selected: null,
+    selections: {},
+    note: ""
 };
 
-const API_URL = "https://ipwho.is/";
+function str(v, fallback = "--") {
+    return v === undefined || v === null || v === ""
+        ? fallback : String(v);
+}
 
-const TIMEOUT = 9;
+function shorten(v, max = 42) {
+    const s = str(v);
+    return s.length > max ? s.slice(0, max) + "…" : s;
+}
 
-// ================================
-// 2. Surge 环境
-// ================================
+// 获取 select 策略组信息
+function getGroupDetails() {
+    try {
+        const data = $surge.selectGroupDetails();
+        return data && data.decisions ? data : {
+            groups: {}, decisions: {}
+        };
+    } catch (e) {
+        console.log("获取策略组失败: " + e);
+        return {groups: {}, decisions: {}};
+    }
+}
 
-const network =
-    typeof $network !== "undefined"
-        ? $network
-        : {};
+function chooseMainGroup(details) {
+    const decisions = details.decisions || {};
+    const names = Object.keys(decisions);
 
-const environment =
-    typeof $environment !== "undefined"
-        ? $environment
-        : {};
+    result.selections = decisions;
 
-const ipv4 = network.v4 || {};
-const ipv6 = network.v6 || {};
-const wifi = network.wifi || {};
-
-const systemDNS = Array.isArray(network.dns)
-    ? network.dns
-    : [];
-
-// ================================
-// 3. 工具函数
-// ================================
-
-function text(value, fallback = "--") {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return fallback;
+    if (!names.length) {
+        result.note = "没有可读取的 select 策略组";
+        return null;
     }
 
-    return String(value);
+    // 优先识别常见的主代理策略组名称
+    const exactNames = [
+        "PROXY", "Proxy", "proxy",
+        "🚀 节点选择", "🚀 节点代理",
+        "节点选择", "代理选择",
+        "代理节点", "主代理",
+        "GLOBAL", "Global"
+    ];
+
+    for (const name of exactNames) {
+        if (Object.prototype.hasOwnProperty.call(
+            decisions, name
+        )) {
+            result.selected = decisions[name];
+            return name;
+        }
+    }
+
+    // 匹配包含明确代理语义的组名
+    const candidates = names.filter(name =>
+        /proxy|代理|节点选择|主线路/i.test(name)
+    );
+
+    if (candidates.length === 1) {
+        const name = candidates[0];
+        result.selected = decisions[name];
+        return name;
+    }
+
+    // 只有一个选择组时，可安全选用
+    if (names.length === 1) {
+        const name = names[0];
+        result.selected = decisions[name];
+        return name;
+    }
+
+    result.note =
+        "存在多个策略组，无法唯一确定主代理组";
+    return null;
 }
 
-function shorten(value, max = 38) {
-    const result = text(value);
-    return result.length > max
-        ? result.slice(0, max - 1) + "…"
-        : result;
-}
+// IP 检测
+function testIP(policy, callback) {
+    const started = Date.now();
 
-function locationText(data) {
-    if (!data) return "--";
+    $httpClient.get({
+        url: IP_API,
+        policy: policy,
+        timeout: TIMEOUT,
+        headers: {Accept: "application/json"}
+    }, (error, response, body) => {
+        const elapsed = Date.now() - started;
 
-    return [
-        data.flag && data.flag.emoji,
-        data.country,
-        data.region,
-        data.city
-    ].filter(Boolean).join(" ");
-}
-
-function getGroups() {
-    try {
-        if (
-            typeof $surge === "undefined" ||
-            !$surge.selectGroupDetails
-        ) {
-            return {};
+        if (error) {
+            callback({
+                ok: false,
+                ms: elapsed,
+                error: String(error)
+            });
+            return;
         }
 
-        const details = $surge.selectGroupDetails();
-
-        return details && details.decisions
-            ? details.decisions
-            : {};
-    } catch (e) {
-        console.log("查询策略组失败：" + e);
-        return {};
-    }
-}
-
-// ================================
-// 4. 请求出口 IP 信息
-// ================================
-
-function requestIP(policy, callback) {
-    const start = Date.now();
-
-    $httpClient.get(
-        {
-            url: API_URL,
-            policy: policy,
-            timeout: TIMEOUT,
-            headers: {
-                Accept: "application/json"
-            }
-        },
-        function(error, response, body) {
-            const elapsed = Date.now() - start;
-
-            if (error) {
-                callback({
-                    ok: false,
-                    latency: elapsed,
-                    error: String(error)
-                });
-                return;
-            }
-
+        try {
             const status = Number(
                 response && (
-                    response.status ||
-                    response.statusCode
+                    response.status || response.statusCode
                 )
             );
 
             if (status !== 200) {
-                callback({
-                    ok: false,
-                    latency: elapsed,
-                    error: "HTTP " + status
-                });
-                return;
+                throw new Error("HTTP " + status);
             }
 
-            try {
-                const data = typeof body === "string"
-                    ? JSON.parse(body)
-                    : body;
+            const data = typeof body === "string"
+                ? JSON.parse(body) : body;
 
-                if (
-                    !data ||
-                    data.success !== true ||
-                    !data.ip
-                ) {
-                    throw new Error(
-                        data && data.message
-                            ? data.message
-                            : "API 未返回有效 IP"
-                    );
-                }
-
-                callback({
-                    ok: true,
-                    latency: elapsed,
-                    data: data
-                });
-
-            } catch (e) {
-                callback({
-                    ok: false,
-                    latency: elapsed,
-                    error: String(e.message || e)
-                });
+            if (!data || !data.success || !data.ip) {
+                throw new Error(
+                    str(data && data.message, "IP API 响应无效")
+                );
             }
+
+            callback({
+                ok: true,
+                ms: elapsed,
+                data: data
+            });
+
+        } catch (e) {
+            callback({
+                ok: false,
+                ms: elapsed,
+                error: String(e.message || e)
+            });
         }
-    );
-}
-
-// ================================
-// 5. 准备结果
-// ================================
-
-const results = {
-    direct: null,
-    proxy: null
-};
-
-const CHECK_PROXY =
-    CONFIG.proxy.toUpperCase() !== "DIRECT";
-
-let pending = CHECK_PROXY ? 2 : 1;
-let finished = false;
-
-// 防止异步回调重复完成
-function complete(type, result) {
-    if (finished) return;
-
-    results[type] = result;
-    pending--;
-
-    if (pending <= 0) {
-        finished = true;
-        render();
-    }
-}
-
-// 分别执行两个出口探测
-requestIP("DIRECT", function(result) {
-    complete("direct", result);
-});
-
-if (CHECK_PROXY) {
-    requestIP(CONFIG.proxy, function(result) {
-        complete("proxy", result);
     });
 }
 
-// ================================
-// 6. 格式化出口结果
-// ================================
+// 查询出站模式，自动确定代理
+function detectPolicy(callback) {
+    const groups = getGroupDetails();
 
-function appendIP(lines, title, result) {
-    lines.push("");
-    lines.push(title);
+    $httpAPI("GET", "/v1/outbound", null, data => {
+        const mode = data && data.mode;
+        result.mode = mode || "unknown";
 
-    if (!result) {
-        lines.push("  状态：尚未取得结果");
-        return;
-    }
+        if (mode === "direct") {
+            result.note = "当前为全局直连模式";
+            callback(null);
+            return;
+        }
 
-    if (!result.ok) {
-        lines.push("  状态：❌ 检测失败");
-        lines.push(
-            "  原因：" + shorten(result.error, 65)
-        );
-        return;
-    }
+        if (mode === "proxy") {
+            $httpAPI(
+                "GET",
+                "/v1/outbound/global",
+                null,
+                globalData => {
+                    const policy = globalData && globalData.policy;
 
-    const data = result.data;
-    const conn = data.connection || {};
+                    if (policy) {
+                        result.policy = policy;
+                        result.selected =
+                            groups.decisions[policy] || policy;
+                        callback(policy);
+                    } else {
+                        result.note = "无法读取全局代理策略";
+                        callback(null);
+                    }
+                }
+            );
+            return;
+        }
 
-    lines.push("  IP：" + text(data.ip));
-    lines.push(
-        "  位置：" + locationText(data)
-    );
-    lines.push(
-        "  运营商：" + shorten(
-            conn.isp || conn.org || "--"
-        )
-    );
-    lines.push(
-        "  ASN：" + (
-            conn.asn !== undefined
-                ? "AS" + conn.asn
-                : "--"
-        )
-    );
-    lines.push(
-        "  组织：" + shorten(conn.org)
-    );
-    lines.push(
-        "  探测耗时：" + result.latency + " ms"
-    );
+        if (mode === "rule") {
+            const group = chooseMainGroup(groups);
+
+            if (group) {
+                result.policy = group;
+            }
+
+            callback(group);
+            return;
+        }
+
+        result.note = "无法读取 Surge 出站模式";
+        callback(null);
+    });
 }
 
-// ================================
-// 7. 生成 Panel
-// ================================
+// 并发探测
+let remaining = 2;
+
+function finishOne() {
+    remaining--;
+    if (remaining === 0) render();
+}
+
+testIP("DIRECT", value => {
+    result.direct = value;
+    finishOne();
+});
+
+detectPolicy(policy => {
+    if (!policy || policy === "DIRECT") {
+        result.proxy = {
+            skipped: true
+        };
+        finishOne();
+        return;
+    }
+
+    testIP(policy, value => {
+        result.proxy = value;
+        finishOne();
+    });
+});
+
+// 出口信息
+function addIP(lines, label, value) {
+    lines.push("");
+    lines.push(label);
+
+    if (!value || value.skipped) {
+        lines.push("  未执行代理探测");
+        return;
+    }
+
+    if (!value.ok) {
+        lines.push("  ❌ " + shorten(value.error, 70));
+        return;
+    }
+
+    const d = value.data;
+    const c = d.connection || {};
+
+    lines.push("  IP：" + str(d.ip));
+    lines.push(
+        "  位置：" +
+        [
+            d.flag && d.flag.emoji,
+            d.country,
+            d.region,
+            d.city
+        ].filter(Boolean).join(" ")
+    );
+    lines.push("  运营商：" + shorten(c.isp));
+    lines.push("  ASN：" +
+        (c.asn ? "AS" + c.asn : "--"));
+    lines.push("  组织：" + shorten(c.org));
+    lines.push("  HTTP 耗时：" + value.ms + " ms");
+}
 
 function render() {
     const lines = [];
 
-    // 本地网络信息
     lines.push("━━━ 🖥 本地网络 ━━━");
 
-    if (CONFIG.showSSID) {
-        lines.push(
-            "📶 Wi-Fi：" + text(wifi.ssid, "未获取")
-        );
+    if (SHOW_SSID) {
+        lines.push("📶 Wi-Fi：" + str(wifi.ssid));
     }
 
     lines.push(
-        "🔌 IPv4 网卡：" + text(ipv4.primaryInterface)
+        "🔌 网络接口：" + str(v4.primaryInterface)
     );
-
     lines.push(
-        "🏠 本机 IPv4：" + text(ipv4.primaryAddress)
+        "🏠 本机 IPv4：" + str(v4.primaryAddress)
     );
-
     lines.push(
-        "🚪 默认网关：" + text(ipv4.primaryRouter)
+        "🚪 默认网关：" + str(v4.primaryRouter)
     );
-
     lines.push(
-        "🌐 IPv6 地址：" + text(
-            ipv6.primaryAddress,
-            "未启用或不可用"
+        "🌐 IPv6：" + str(
+            v6.primaryAddress, "未启用或不可用"
         )
     );
 
-    if (ipv6.primaryInterface) {
-        lines.push(
-            "🔌 IPv6 网卡：" + ipv6.primaryInterface
-        );
-    }
-
-    // DNS
     lines.push("");
-    lines.push("━━━ 🧭 DNS 配置 ━━━");
-
-    if (systemDNS.length) {
-        systemDNS.forEach(function(server, i) {
-            lines.push(
-                "DNS " + (i + 1) + "：" + server
-            );
-        });
-    } else {
-        lines.push("DNS：未获取到系统 DNS");
-    }
-
-    // 直连出口
-    appendIP(
-        lines,
-        "━━━ 🌍 直连出口 DIRECT ━━━",
-        results.direct
+    lines.push("━━━ 🧭 DNS ━━━");
+    lines.push(
+        dns.length ? dns.join(" · ") : "未获取到系统 DNS"
     );
 
-    // 代理出口
-    if (CHECK_PROXY) {
-        appendIP(
-            lines,
-            "━━━ 🛡 代理出口 ━━━",
-            results.proxy
-        );
+    addIP(lines, "━━━ 🌍 直连出口 ━━━", result.direct);
+    addIP(lines, "━━━ 🛡 代理出口 ━━━", result.proxy);
 
-        lines.push(
-            "  测试策略：" + CONFIG.proxy
-        );
-    }
-
-    // 策略组
     lines.push("");
-    lines.push("━━━ 🔀 Surge 策略 ━━━");
+    lines.push("━━━ 🔀 Surge 代理策略 ━━━");
 
-    const decisions = getGroups();
-    const selected = decisions[CONFIG.group];
+    const modeNames = {
+        rule: "规则模式",
+        proxy: "全局代理",
+        direct: "全局直连"
+    };
 
     lines.push(
-        "策略组：" + CONFIG.group
+        "出站模式：" +
+        (modeNames[result.mode] || "未知")
     );
 
     lines.push(
-        "当前选择：" + text(
-            selected,
-            "未找到或非 select 策略组"
-        )
+        "自动识别策略：" + str(result.policy)
     );
-
-    // 状态检测
-    lines.push("");
-    lines.push("━━━ 🩺 网络诊断 ━━━");
-
-    const directOK =
-        results.direct && results.direct.ok;
-
-    const proxyOK =
-        results.proxy && results.proxy.ok;
 
     lines.push(
-        "直连出口：" +
-        (directOK ? "✅ 正常" : "❌ 异常")
+        "当前选择：" + str(result.selected)
     );
 
-    if (CHECK_PROXY) {
+    if (result.note) {
+        lines.push("提示：" + result.note);
+    }
+
+    // 展示其他 select 策略组
+    const selections = result.selections;
+    const names = Object.keys(selections);
+
+    if (names.length) {
+        lines.push("");
+        lines.push("━━━ 📋 其他策略选择 ━━━");
+
+        names.filter(n => n !== result.policy)
+            .slice(0, 8)
+            .forEach(name => {
+                lines.push(
+                    shorten(name, 20) + " → " +
+                    shorten(selections[name], 28)
+                );
+            });
+    }
+
+    lines.push("");
+    lines.push("━━━ 🩺 状态检查 ━━━");
+
+    lines.push(
+        "直连：" +
+        (result.direct && result.direct.ok
+            ? "✅ 正常" : "❌ 异常")
+    );
+
+    if (result.proxy && !result.proxy.skipped) {
         lines.push(
-            "代理出口：" +
-            (proxyOK ? "✅ 正常" : "❌ 异常")
+            "代理：" +
+            (result.proxy.ok ? "✅ 正常" : "❌ 异常")
         );
 
-        if (directOK && proxyOK) {
-            const sameIP =
-                results.direct.data.ip ===
-                results.proxy.data.ip;
+        if (
+            result.direct && result.direct.ok &&
+            result.proxy.ok
+        ) {
+            const same =
+                result.direct.data.ip === result.proxy.data.ip;
 
             lines.push(
-                "出口 IP 对比：" +
-                (sameIP
-                    ? "⚠️ 相同"
-                    : "✅ 不同")
+                "出口 IP：" +
+                (same ? "⚠️ 相同" : "✅ 不同")
             );
         }
     }
 
-    // 运行环境
     lines.push("");
     lines.push("━━━ ⚙️ 系统信息 ━━━");
-
+    lines.push("系统：" + str(env.system));
     lines.push(
-        "系统：" + text(environment.system)
+        "Surge：" + str(env["surge-version"])
     );
-
     lines.push(
-        "Surge：" +
-        text(environment["surge-version"])
+        "Build：" + str(env["surge-build"])
     );
-
     lines.push(
-        "Build：" +
-        text(environment["surge-build"])
-    );
-
-    const now = new Date();
-
-    lines.push(
-        "更新时间：" +
-        now.toLocaleString("zh-CN", {
+        "更新：" + new Date().toLocaleString("zh-CN", {
             hour12: false
         })
     );
 
-    // Panel 状态图标
-    let style = "good";
+    const directOK = result.direct && result.direct.ok;
+    const proxyFailed =
+        result.proxy &&
+        !result.proxy.skipped &&
+        !result.proxy.ok;
 
-    if (!directOK) {
-        style = "error";
-    } else if (CHECK_PROXY && !proxyOK) {
-        style = "alert";
-    }
-
-    let title = "🌐 Network Pro";
-
-    if (directOK) {
-        title += " · " + results.direct.data.ip;
-    }
-
-    // 输出
     $done({
-        title: title,
+        title: "🌐 Network Pro · 自动策略",
         content: lines.join("\n"),
-        style: style
+        style: !directOK ? "error" :
+            proxyFailed ? "alert" : "info"
     });
 }

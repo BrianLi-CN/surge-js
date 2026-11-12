@@ -1,12 +1,12 @@
-#!name=🌐 Network Pro · 网络信息
-#!desc=本机网络、DNS、直连及代理出口IP、ISP、ASN、请求延迟、Surge策略状态
-#!category=Network
+#!name=🌐 Network Pro · 自动策略版
+#!desc=自动识别 Surge 代理策略组和选中节点，监测本地网络、DNS、直连与代理出口
 #!system=mac
-#!arguments=PROXY_POLICY:DIRECT,GROUP_NAME:PROXY,SHOW_SSID:true,REFRESH:300
-#!arguments-desc=PROXY_POLICY 填节点或策略组名，DIRECT 表示不检测代理；GROUP_NAME 为查看选中节点的策略组；SHOW_SSID 为 true/false；REFRESH 为刷新秒数。
+#!category=Network
+#!arguments=SHOW_SSID:true,REFRESH:300
+#!arguments-desc=SHOW_SSID 是否显示Wi-Fi名称(true/false)；REFRESH 刷新间隔(秒)。
 
 [Panel]
-Network Pro = title="🌐 Network Pro", content="首次使用请点击刷新", style=info, script-name=network-pro-script, update-interval={{{REFRESH}}}
+Network Pro = title="🌐 Network Pro", content="正在检测网络信息...", style=info, script-name=network-pro-script, update-interval={{{REFRESH}}}
 
 [Script]
-network-pro-script = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/network-pro.js, argument="{{{PROXY_POLICY}}}|{{{GROUP_NAME}}}|{{{SHOW_SSID}}}", timeout=25
+network-pro-script = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/network-pro.js, argument="{{{SHOW_SSID}}}", timeout=30
