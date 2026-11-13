@@ -1,431 +1,546 @@
 
 /**
- * YunShu Pro - Internal Network Monitor
- * Surge Mac 6.12.0+
+ * YunShu Pro v2.0
+ * Surge Mac 6.12.0
  *
- * 检测：
- * 1. Mac 本地网络信息
- * 2. YunShu SOCKS5 代理 HTTP 转发
- * 3. 云枢 VPN 内网 HTTP 服务可用性
- * 4. 内网域名 / IP 服务对比
+ * Surge -> Ubuntu GOST -> YunShu VPN -> LAN
  *
- * 不需要 MITM，不修改 Surge 配置。
+ * 只读监控，不修改策略、路由或服务状态。
  */
 
-const params = String(
+const args = String(
     typeof $argument === "string" ? $argument : ""
 ).split("|");
 
-const CONFIG = {
-    proxy: (params[0] || "🪜 YunShu").trim(),
-    publicURL: (params[1] ||
+const CFG = {
+    proxy: (args[0] || "🪜 YunShu").trim(),
+    publicURL: (args[1] ||
         "http://www.gstatic.com/generate_204").trim(),
-    internalURL: (params[2] || "").trim(),
-    internalIPURL: (params[3] || "").trim(),
-    timeout: 9
+    domainURL: (args[2] || "").trim(),
+    ipURL: (args[3] || "").trim(),
+    healthURL: (args[4] || "").trim(),
+    timeout: 8
 };
 
 const net = typeof $network !== "undefined"
     ? $network : {};
 
-const env = typeof $environment !== "undefined"
-    ? $environment : {};
-
-const v4 = net.v4 || {};
-const wifi = net.wifi || {};
-
 const COLORS = {
-    good: "#14B8A6",
-    warning: "#F59E0B",
-    error: "#EF4444"
+    ok: "#14B8A6",
+    warn: "#F59E0B",
+    fail: "#EF4444",
+    unknown: "#64748B"
 };
 
-let completed = false;
+const results = {};
+const tasks = [
+    ["public", "公网转发", CFG.publicURL, CFG.proxy],
+    ["domain", "内网域名", CFG.domainURL, CFG.proxy],
+    ["ip", "内网IP", CFG.ipURL, CFG.proxy],
+    ["health", "Ubuntu健康", CFG.healthURL, "DIRECT"]
+];
+
+let pending = tasks.length;
+let finished = false;
 
 // -------------------------------
 // 工具函数
 // -------------------------------
 
 function str(value, fallback = "--") {
-    if (
-        value === undefined ||
+    if (value === undefined ||
         value === null ||
-        value === ""
-    ) {
+        value === "") {
         return fallback;
     }
     return String(value);
 }
 
-function short(value, max = 55) {
+function compact(value, max = 55) {
     const s = str(value);
     return s.length > max
         ? s.slice(0, max - 1) + "…"
         : s;
 }
 
-function safeHost(url) {
-    if (!url) return "未配置";
+function isURL(value) {
+    return /^https?:\/\/[^/?#\s]+/i.test(value);
+}
 
-    // 不在面板中显示路径、Token 和查询参数
-    const match = url.match(
+function host(value) {
+    if (!value) return "未配置";
+    const match = value.match(
         /^https?:\/\/([^/?#]+)/i
     );
-
     return match ? match[1] : "地址无效";
 }
 
-function validURL(url) {
-    return /^https?:\/\/[^/?#\s]+/i.test(url);
+function number(value, digits = 1) {
+    return typeof value === "number" &&
+    Number.isFinite(value)
+        ? value.toFixed(digits)
+        : "--";
 }
 
-function finish(data) {
-    if (completed) return;
-    completed = true;
+function latencyLevel(ms) {
+    if (typeof ms !== "number") return "未知";
+    if (ms < 150) return "快速";
+    if (ms < 500) return "正常";
+    if (ms < 1000) return "偏慢";
+    return "较慢";
+}
+
+function statusName(r) {
+    if (!r) return "未检测";
+
+    switch (r.state) {
+        case "ok": return "正常";
+        case "warn": return "警告";
+        case "fail": return "失败";
+        case "skip": return "未配置";
+        default: return "未知";
+    }
+}
+
+function safeFinish(data) {
+    if (finished) return;
+    finished = true;
     $done(data);
 }
 
-function finishError(message) {
-    finish({
-        title: "YunShu Pro · 运行异常",
-        content: String(message),
-        icon: "exclamationmark.triangle.fill",
-        "icon-color": COLORS.error
-    });
+function complete(key, result) {
+    if (finished || results[key]) return;
+
+    results[key] = result;
+    pending--;
+
+    if (pending === 0) {
+        try {
+            render();
+        } catch (e) {
+            safeFinish({
+                title: "YunShu Pro · 脚本异常",
+                content: compact(e.message || e, 150),
+                icon: "exclamationmark.triangle.fill",
+                "icon-color": COLORS.fail
+            });
+        }
+    }
 }
 
 // -------------------------------
 // HTTP 探测
 // -------------------------------
 
-function httpProbe(name, url, policy, callback) {
+function probe(key, label, url, policy) {
     if (!url) {
-        callback({
-            name: name,
-            state: "unconfigured",
-            message: "未配置"
+        complete(key, {
+            state: "skip",
+            label: label
         });
         return;
     }
 
-    if (!validURL(url)) {
-        callback({
-            name: name,
-            state: "error",
-            message: "URL 格式无效"
+    if (!isURL(url)) {
+        complete(key, {
+            state: "fail",
+            label: label,
+            error: "地址格式错误"
         });
         return;
     }
 
     const started = Date.now();
+    let called = false;
+
+    function returnOnce(r) {
+        if (called) return;
+        called = true;
+        complete(key, r);
+    }
 
     try {
         $httpClient.get({
             url: url,
             policy: policy,
-            timeout: CONFIG.timeout,
+            timeout: CFG.timeout,
+            "auto-redirect": false,
             headers: {
-                "Accept": "*/*",
+                "Accept": "application/json, */*",
                 "Cache-Control": "no-cache"
             }
         }, function(error, response, body) {
-            const elapsed = Date.now() - started;
+            const ms = Date.now() - started;
 
             if (error) {
-                callback({
-                    name: name,
-                    state: "error",
-                    ms: elapsed,
-                    message: short(error, 80)
+                returnOnce({
+                    state: "fail",
+                    label: label,
+                    ms: ms,
+                    error: compact(error, 90)
                 });
                 return;
             }
 
-            const status = Number(
+            const code = Number(
                 response && (
-                    response.status ||
-                    response.statusCode
+                    response.status || response.statusCode
                 )
             );
 
-            if (!Number.isFinite(status) ||
-                status < 100) {
-                callback({
-                    name: name,
-                    state: "error",
-                    ms: elapsed,
-                    message: "HTTP 响应状态无效"
+            if (!Number.isFinite(code) || code < 100) {
+                returnOnce({
+                    state: "fail",
+                    label: label,
+                    ms: ms,
+                    error: "无有效HTTP状态码"
                 });
                 return;
             }
 
-            // HTTP 成功，包括重定向。
-            if (status >= 200 && status < 400) {
-                callback({
-                    name: name,
-                    state: "ok",
-                    ms: elapsed,
-                    code: status,
-                    message: "HTTP 响应正常"
-                });
-                return;
+            let state = "fail";
+            let reason = "";
+
+
+            if (code >= 200 && code < 300) {
+                state = "ok";
+            } else if (code >= 300 && code < 400) {
+                // 内网连通性检测允许 HTTP 重定向
+                // 不代表最终业务页面已经验证成功
+                if (key === "domain" || key === "ip") {
+                    state = "ok";
+                    reason = "服务可达（HTTP 重定向）";
+                } else {
+                    state = "warn";
+                    reason = "服务返回重定向";
+                }
+            } else if (code === 401 || code === 403) {
+                state = "warn";
+                reason = "服务可达但需要授权";
+            } else if (code >= 400 && code < 500) {
+                state = "warn";
+                reason = "服务可达但请求被拒绝";
+            } else {
+                reason = "服务端HTTP异常";
             }
 
-            // 401/403 是可达，但认证不通过。
-            if (status === 401 || status === 403) {
-                callback({
-                    name: name,
-                    state: "warning",
-                    ms: elapsed,
-                    code: status,
-                    message: "服务可达，需认证"
-                });
-                return;
+            const result = {
+                state: state,
+                label: label,
+                ms: ms,
+                code: code,
+                error: reason
+            };
+
+            // 仅健康接口解析约定的 JSON
+            if (key === "health" && state === "ok") {
+                try {
+                    const data = typeof body === "string"
+                        ? JSON.parse(body)
+                        : body;
+
+                    if (!data ||
+                        typeof data !== "object" ||
+                        Array.isArray(data)) {
+                        throw new Error("无效健康数据");
+                    }
+
+                    result.health = data;
+
+                    // 有明确的失败标志时不能判定健康
+                    if (data.gost && data.gost.running === false) {
+                        result.state = "fail";
+                        result.error = "GOST进程未运行";
+                    }
+
+                    if (data.vpn && data.vpn.connected === false) {
+                        result.state = "fail";
+                        result.error = "VPN报告未连接";
+                    }
+
+                } catch (e) {
+                    result.state = "warn";
+                    result.error = "健康接口JSON无效";
+                }
             }
 
-            if (status >= 400 && status < 500) {
-                callback({
-                    name: name,
-                    state: "warning",
-                    ms: elapsed,
-                    code: status,
-                    message: "服务可达，客户端请求异常"
-                });
-                return;
-            }
-
-            callback({
-                name: name,
-                state: "error",
-                ms: elapsed,
-                code: status,
-                message: "HTTP 服务端异常"
-            });
+            returnOnce(result);
         });
+
     } catch (e) {
-        callback({
-            name: name,
-            state: "error",
-            message: short(e, 80)
+        returnOnce({
+            state: "fail",
+            label: label,
+            error: compact(e.message || e)
         });
     }
 }
 
 // -------------------------------
-// 状态显示
+// 健康结果展示
 // -------------------------------
 
-function statusText(result) {
-    if (!result) return "未检测";
-
-    switch (result.state) {
-        case "ok":
-            return "正常";
-        case "warning":
-            return "警告";
-        case "error":
-            return "失败";
-        case "unconfigured":
-            return "未配置";
-        default:
-            return "未知";
-    }
-}
-
-function addProbe(lines, label, result) {
-    lines.push(label + "：" + statusText(result));
-
-    if (!result || result.state === "unconfigured") {
-        return;
-    }
-
-    if (result.code) {
-        lines.push("  HTTP 状态：" + result.code);
-    }
-
-    if (Number.isFinite(result.ms)) {
-        lines.push("  请求耗时：" + result.ms + " ms");
-    }
-
-    if (result.state !== "ok" && result.message) {
-        lines.push("  提示：" + result.message);
-    }
-}
-
-// -------------------------------
-// 面板输出
-// -------------------------------
-
-function render(results) {
-    const lines = [];
-
-    const publicResult = results.public;
-    const internalResult = results.internal;
-    const ipResult = results.internalIP;
-
-    const internalChecks = [
-        internalResult,
-        ipResult
-    ].filter(r => r && r.state !== "unconfigured");
-
-    const hasInternal = internalChecks.length > 0;
-
-    const internalOK = internalChecks.some(
-        r => r.state === "ok"
-    );
-
-    const internalWarning = internalChecks.some(
-        r => r.state === "warning"
-    );
-
-    const allInternalOK =
-        hasInternal &&
-        internalChecks.every(r => r.state === "ok");
-
-    const publicOK = publicResult &&
-        publicResult.state === "ok";
-
-    let level = "good";
-    let summary = "未完成内网验证";
-
-    if (!publicOK) {
-        level = "error";
-        summary = "YunShu 公网探测异常";
-    } else if (!hasInternal) {
-        level = "warning";
-        summary = "代理可用 · 内网待验证";
-    } else if (allInternalOK) {
-        summary = "已配置内网检查均正常";
-    } else if (internalOK || internalWarning) {
-        level = "warning";
-        summary = "部分内网检查异常";
-    } else {
-        level = "error";
-        summary = "内网 HTTP 检查失败";
-    }
-
-    lines.push("━━━ 本地网络 ━━━");
-    lines.push("Wi-Fi：" + str(wifi.ssid, "未获取"));
-    lines.push("网络接口：" + str(v4.primaryInterface));
-    lines.push("本机 IPv4：" + str(v4.primaryAddress));
-    lines.push("默认网关：" + str(v4.primaryRouter));
-
+function addProbe(lines, title, url, r) {
     lines.push("");
-    lines.push("━━━ YunShu 代理 ━━━");
-    lines.push("代理策略：" + CONFIG.proxy);
-    lines.push("测试地址：" + safeHost(CONFIG.publicURL));
-    addProbe(lines, "公网转发", publicResult);
+    lines.push("━━━ " + title + " ━━━");
+    lines.push("目标：" + host(url));
+    lines.push("状态：" + statusName(r));
 
-    lines.push("");
-    lines.push("━━━ 企业内网 ━━━");
-    lines.push("域名服务：" + safeHost(CONFIG.internalURL));
-    addProbe(lines, "域名 HTTP", internalResult);
+    if (!r || r.state === "skip") return;
 
-    lines.push("");
-    lines.push("IP 服务：" + safeHost(CONFIG.internalIPURL));
-    addProbe(lines, "IP HTTP", ipResult);
+    if (r.code) {
+        lines.push("HTTP：" + r.code);
+    }
 
-    lines.push("");
-    lines.push("━━━ 链路状态 ━━━");
-    lines.push("代理公网：" +
-        (publicOK ? "正常" : "异常"));
-
-    if (!hasInternal) {
-        lines.push("云枢 VPN：未验证");
-    } else if (allInternalOK) {
-        lines.push("云枢 VPN 链路：内网 HTTP 可访问");
-    } else {
+    if (typeof r.ms === "number") {
         lines.push(
-            "云枢 VPN 链路：部分或全部检测异常"
+            "耗时：" + r.ms + " ms · " +
+            latencyLevel(r.ms)
         );
     }
 
-    if (internalResult &&
-        internalResult.state === "ok") {
-        lines.push("内网域名访问：成功");
-    } else if (!CONFIG.internalURL) {
-        lines.push("内网域名访问：未配置");
-    } else {
-        lines.push("内网域名访问：未确认");
+    if (r.error) {
+        lines.push("说明：" + compact(r.error));
+    }
+}
+
+function addHostInfo(lines, r) {
+    if (!r || !r.health) return;
+
+    const d = r.health;
+    const gost = d.gost || {};
+    const vpn = d.vpn || {};
+    const system = d.system || {};
+
+    lines.push("");
+    lines.push("━━━ Ubuntu运行状态 ━━━");
+
+    lines.push("GOST进程：" +
+        (typeof gost.running === "boolean"
+            ? (gost.running ? "运行中" : "已停止")
+            : "未提供"));
+
+    lines.push("GOST版本：" +
+        str(gost.version));
+
+    lines.push("SOCKS5端口：" +
+        str(gost.port));
+
+    lines.push("VPN状态：" +
+        (typeof vpn.connected === "boolean"
+            ? (vpn.connected ? "已连接" : "未连接")
+            : "未提供"));
+
+    lines.push("VPN接口：" +
+        str(vpn.interface));
+
+    lines.push("CPU占用：" +
+        (typeof system.cpu_percent === "number"
+            ? number(system.cpu_percent) + "%"
+            : "--"));
+
+    lines.push("内存使用：" +
+        (typeof system.memory_percent === "number"
+            ? number(system.memory_percent) + "%"
+            : "--"));
+
+    lines.push("运行时间：" +
+        str(system.uptime));
+}
+
+// -------------------------------
+// 汇总诊断
+// -------------------------------
+
+function diagnose() {
+    const pub = results.public;
+    const domain = results.domain;
+    const ip = results.ip;
+    const health = results.health;
+
+    const internal = [domain, ip].filter(
+        r => r && r.state !== "skip"
+    );
+
+    const internalOK = internal.some(
+        r => r.state === "ok"
+    );
+
+    const internalAllOK =
+        internal.length > 0 &&
+        internal.every(r => r.state === "ok");
+
+    const internalAllFail =
+        internal.length > 0 &&
+        internal.every(r => r.state === "fail");
+
+    const notes = [];
+    let level = "unknown";
+    let summary = "待配置内网检测";
+
+    if (internalAllOK) {
+        level = "ok";
+        summary = "内网检测正常";
+    } else if (internalOK) {
+        level = "warn";
+        summary = "内网部分异常";
+    } else if (internalAllFail) {
+        level = "fail";
+        summary = "内网检测失败";
+    } else if (internal.length > 0) {
+        level = "warn";
+        summary = "内网服务有告警";
+    } else if (pub && pub.state === "ok") {
+        level = "warn";
+        summary = "代理可用·内网未验证";
+    } else if (pub && pub.state === "fail") {
+        level = "warn";
+        summary = "代理测试异常·内网未验证";
+    }
+
+    if (internal.length > 0) {
+        if (domain.state === "fail" && ip.state === "ok") {
+            notes.push(
+                "IP服务正常、域名服务失败；检查DNS或域名服务。"
+            );
+        } else if (
+            domain.state === "ok" &&
+            ip.state === "fail"
+        ) {
+            notes.push(
+                "域名服务正常、IP服务失败；检查IP目标或端口。"
+            );
+        } else if (internalAllFail) {
+            notes.push(
+                "内网目标均失败；检查代理、VPN路由及内网服务。"
+            );
+        }
+    }
+
+    if (pub && pub.state === "fail" && internalOK) {
+        notes.push(
+            "内网可用，公网探测失败不代表VPN故障。"
+        );
+    }
+
+    if (health && health.health) {
+        const h = health.health;
+
+        if (h.gost && h.gost.running === false) {
+            level = "fail";
+            summary = "GOST服务异常";
+        }
+
+        if (h.vpn && h.vpn.connected === false) {
+            level = "fail";
+            summary = "VPN状态异常";
+        }
+    }
+
+    return {
+        level: level,
+        summary: summary,
+        notes: notes
+    };
+}
+
+// -------------------------------
+// 渲染面板
+// -------------------------------
+
+function render() {
+    const lines = [];
+    const v4 = net.v4 || {};
+    const wifi = net.wifi || {};
+
+    const state = diagnose();
+
+    lines.push("━━━ 本地网络 ━━━");
+    lines.push("Wi-Fi：" + str(wifi.ssid));
+    lines.push("接口：" + str(v4.primaryInterface));
+    lines.push("Mac IP：" + str(v4.primaryAddress));
+    lines.push("网关：" + str(v4.primaryRouter));
+
+    lines.push("");
+    lines.push("━━━ 代理配置 ━━━");
+    lines.push("策略：" + CFG.proxy);
+    lines.push("GOST：SOCKS5 / TCP");
+    lines.push("UDP：未进行协议测试");
+
+    addProbe(
+        lines, "公网转发",
+        CFG.publicURL, results.public
+    );
+
+    addProbe(
+        lines, "企业内网域名",
+        CFG.domainURL, results.domain
+    );
+
+    addProbe(
+        lines, "企业内网IP",
+        CFG.ipURL, results.ip
+    );
+
+    if (CFG.healthURL) {
+        addProbe(
+            lines, "Ubuntu健康接口",
+            CFG.healthURL, results.health
+        );
+        addHostInfo(lines, results.health);
     }
 
     lines.push("");
-    lines.push("━━━ 系统信息 ━━━");
-    lines.push("Surge：" +
-        str(env["surge-version"]));
-    lines.push("Build：" +
-        str(env["surge-build"]));
+    lines.push("━━━ 综合诊断 ━━━");
+    lines.push("结果：" + state.summary);
 
-    lines.push("更新时间：" +
-        new Date().toLocaleString("zh-CN", {
-            hour12: false
-        })
-    );
+    state.notes.forEach(function(note) {
+        lines.push("提示：" + note);
+    });
 
-    const color = COLORS[level];
+    const icon = state.level === "fail"
+        ? "network.slash"
+        : "network";
 
-    finish({
-        title: "YunShu Pro · " + summary,
+    safeFinish({
+        title: "YunShu Pro · " + state.summary,
         content: lines.join("\n"),
-        icon: level === "error"
-            ? "network.slash"
-            : "network.badge.shield.half.filled",
-        "icon-color": color
+        icon: icon,
+        "icon-color": COLORS[state.level]
     });
 }
 
 // -------------------------------
-// 运行三个检测任务
+// 启动
 // -------------------------------
 
-function main() {
-    const results = {};
-    let pending = 3;
+tasks.forEach(function(task) {
+    probe(task[0], task[1], task[2], task[3]);
+});
 
-    function complete(key, value) {
-        if (completed) return;
-        results[key] = value;
-        pending--;
+// 总超时保护，避免一直显示初始文本
+setTimeout(function() {
+    if (finished) return;
 
-        if (pending === 0) {
-            try {
-                render(results);
-            } catch (e) {
-                finishError(
-                    "面板渲染失败：" +
-                    String(e.message || e)
-                );
-            }
+    tasks.forEach(function(task) {
+        const key = task[0];
+
+        if (!results[key]) {
+            results[key] = {
+                state: "fail",
+                error: "检测超过总等待时间"
+            };
         }
+    });
+
+    try {
+        render();
+    } catch (e) {
+        safeFinish({
+            title: "YunShu Pro · 检测异常",
+            content: compact(e.message || e, 150),
+            icon: "network.slash",
+            "icon-color": COLORS.fail
+        });
     }
-
-    httpProbe(
-        "公网转发",
-        CONFIG.publicURL,
-        CONFIG.proxy,
-        result => complete("public", result)
-    );
-
-    httpProbe(
-        "内网域名",
-        CONFIG.internalURL,
-        CONFIG.proxy,
-        result => complete("internal", result)
-    );
-
-    httpProbe(
-        "内网 IP",
-        CONFIG.internalIPURL,
-        CONFIG.proxy,
-        result => complete("internalIP", result)
-    );
-}
-
-try {
-    main();
-} catch (e) {
-    finishError(
-        "脚本执行失败：" +
-        String(e.message || e)
-    );
-}
+}, 27000);

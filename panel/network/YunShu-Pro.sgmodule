@@ -2,11 +2,11 @@
 #!desc=监控 Surge、GOST SOCKS5、云枢 VPN 内网 API 和域名连通性
 #!system=mac
 #!category=Network
-#!arguments=PROXY_NAME:🪜 YunShu,PUBLIC_URL:http://www.gstatic.com/generate_204,INTERNAL_URL,INTERNAL_IP_URL,REFRESH:300
-#!arguments-desc=PROXY_NAME 为 Surge 代理名称；PUBLIC_URL 为公网检测地址；INTERNAL_URL 为内网域名 HTTP 地址；INTERNAL_IP_URL 为内网 IP HTTP 地址；REFRESH 为刷新间隔秒数。
+#!arguments=PROXY_NAME:🪜 YunShu,PUBLIC_URL:http://www.gstatic.com/generate_204,INTERNAL_URL,INTERNAL_IP_URL,HEALTH_URL,REFRESH:300
+#!arguments-desc=PROXY_NAME 为Surge现有代理名称；PUBLIC_URL 为公网探测地址；INTERNAL_URL 为内网域名健康检查；INTERNAL_IP_URL 为内网IP健康检查；HEALTH_URL 为可选Ubuntu健康接口；REFRESH 为刷新秒数。
 
 [Panel]
-YunShu Pro = title="YunShu Pro · 内网监控", content="首次使用请刷新面板", icon=network.badge.shield.half.filled, icon-color="#14B8A6", script-name=yunshu-pro, update-interval={{{REFRESH}}}
+YunShu Pro = title="YunShu Pro · 内网监控", content="正在检查内网链路...", icon=network, icon-color="#14B8A6", script-name=yunshu-pro, update-interval={{{REFRESH}}}
 
 [Script]
-yunshu-pro = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/yunshu-pro.js, argument="{{{PROXY_NAME}}}|{{{PUBLIC_URL}}}|{{{INTERNAL_URL}}}|{{{INTERNAL_IP_URL}}}", timeout=35, debug=true
+yunshu-pro = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/yunshu-pro.js, argument="{{{PROXY_NAME}}}|{{{PUBLIC_URL}}}|{{{INTERNAL_URL}}}|{{{INTERNAL_IP_URL}}}|{{{HEALTH_URL}}}", timeout=35, debug=true
