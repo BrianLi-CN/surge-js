@@ -1,0 +1,13 @@
+
+#!name=YunShu Pro v2.0
+#!desc=企业内网链路监控、GOST代理探测、VPN内网检测、可选Ubuntu健康数据
+#!system=mac
+#!category=Network
+#!arguments=PROXY_NAME:🪜 YunShu,PUBLIC_URL:http://www.gstatic.com/generate_204,INTERNAL_URL,INTERNAL_IP_URL,HEALTH_URL,REFRESH:300
+#!arguments-desc=PROXY_NAME 为Surge现有代理名称；PUBLIC_URL 为公网探测地址；INTERNAL_URL 为内网域名健康检查；INTERNAL_IP_URL 为内网IP健康检查；HEALTH_URL 为可选Ubuntu健康接口；REFRESH 为刷新秒数。
+
+[Panel]
+YunShu Pro = title="YunShu Pro · 内网监控", content="正在检查内网链路...", icon=network, icon-color="#14B8A6", script-name=yunshu-pro-v2, update-interval={{{REFRESH}}}
+
+[Script]
+yunshu-pro-v2 = type=generic, script-path=https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/panel/network/yunshu-pro-v2.js, argument="{{{PROXY_NAME}}}|{{{PUBLIC_URL}}}|{{{INTERNAL_URL}}}|{{{INTERNAL_IP_URL}}}|{{{HEALTH_URL}}}", timeout=35, debug=true
