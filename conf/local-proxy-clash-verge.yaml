@@ -1,0 +1,311 @@
+# Converted from local-proxy.conf for Clash Verge Rev / Mihomo
+# Surge URL Rewrite cannot be represented natively by Mihomo:
+# ^https?://(www.)?(g|google).cn -> https://www.google.com (302)
+
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: true
+unified-delay: true
+tcp-concurrent: true
+external-controller: 0.0.0.0:9090
+secret: "123456"
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+geo-auto-update: true
+geo-update-interval: 24
+geodata-mode: true
+geox-url:
+  mmdb: https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/country.mmdb
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  use-hosts: true
+  use-system-hosts: true
+  respect-rules: false
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+    - 8.8.8.8
+    - 1.1.1.1
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "*.id.ui.direct"
+    - "cable.auth.com"
+    - "*.msftconnecttest.com"
+    - "*.msftncsi.com"
+    - "network-test.debian.org"
+    - "detectportal.firefox.com"
+    - "resolver1.opendns.com"
+    - "*.srv.nintendo.net"
+    - "*.stun.playstation.net"
+    - "xbox.*.microsoft.com"
+    - "*.xboxlive.com"
+    - "stun.*"
+    - "global.turn.twilio.com"
+    - "global.stun.twilio.com"
+    - "localhost.*.qq.com"
+    - "*.logon.battlenet.com.cn"
+    - "*.logon.battle.net"
+    - "*.blzstatic.cn"
+    - "music.163.com"
+    - "*.music.163.com"
+    - "*.126.net"
+    - "musicapi.taihe.com"
+    - "music.taihe.com"
+    - "songsearch.kugou.com"
+    - "trackercdn.kugou.com"
+    - "*.kuwo.cn"
+    - "api-jooxtt.sanook.com"
+    - "api.joox.com"
+    - "joox.com"
+    - "y.qq.com"
+    - "*.y.qq.com"
+    - "streamoc.music.tc.qq.com"
+    - "mobileoc.music.tc.qq.com"
+    - "isure.stream.qqmusic.qq.com"
+    - "dl.stream.qqmusic.qq.com"
+    - "aqqmusic.tc.qq.com"
+    - "amobile.music.tc.qq.com"
+    - "*.xiami.com"
+    - "*.music.migu.cn"
+    - "music.migu.cn"
+    - "proxy.golang.org"
+    - "*.mcdn.bilivideo.cn"
+    - "*.cmpassport.com"
+    - "id6.me"
+    - "open.e.189.cn"
+    - "mdn.open.wo.cn"
+    - "auth.wosms.cn"
+    - "*.jegotrip.com.cn"
+    - "*.icitymobile.mobi"
+    - "*.pingan.com.cn"
+    - "*.cmbchina.com"
+    - "pool.ntp.org"
+    - "*.pool.ntp.org"
+    - "ntp.*.com"
+    - "time.*.com"
+    - "*.ntp.org.cn"
+  nameserver-policy:
+    "+.tw": 1.1.1.1
+    "testflight.apple.com": 8.8.8.8
+    "+.tmall.com": 223.5.5.5
+    "+.taobao.com": 223.5.5.5
+    "+.alicdn.com": 223.5.5.5
+    "+.aliyun.com": 223.5.5.5
+    "+.qq.com": 119.29.29.29
+    "+.tencent.com": 119.29.29.29
+    "+.weixin.com": 119.29.29.29
+    "+.qpic.cn": 119.29.29.29
+    "+.jd.com": 119.29.29.29
+    "+.bilibili.com": 119.29.29.29
+    "hdslb.com": 119.29.29.29
+    "+.163.com": 119.29.29.29
+    "+.126.com": 119.29.29.29
+    "+.126.net": 119.29.29.29
+    "+.127.net": 119.29.29.29
+    "+.netease.com": 119.29.29.29
+    "+.10010.com": 119.29.29.29
+    "+.unicompayment.com": 119.29.29.29
+    "+.vercel.app": 119.29.29.29
+    "+.vercel.com": 119.29.29.29
+    "+.ximalaya.com": 119.29.29.29
+    "+.baidu.com": 119.29.29.29
+    "+.bdstatic.com": 119.29.29.29
+
+proxies:
+  - name: "S1｜🇺🇸 Los Angeles"
+    type: ss
+    server: c19s1.portablesubmarines.com
+    port: 29020
+    cipher: aes-256-gcm
+    password: "D9psReDgZrV9Swrs"
+    udp: true
+
+  - name: "S2｜🇺🇸 Los Angeles"
+    type: vless
+    server: c19s2.portablesubmarines.com
+    port: 443
+    uuid: 71461c12-1315-44f2-9750-c9e9723247a0
+    flow: "xtls-rprx-vision"
+    encryption: ""
+    network: "tcp"
+    tls: true
+    servername: "portal.citygrainla.com"
+    client-fingerprint: "chrome"
+    reality-opts:
+      public-key: "BlSccfT5tvDIOS7v9VaPd0ulUNhUdvlMjGiNzDNDUHE"
+      short-id: "051f20c2344a2dfd"
+
+  - name: "S3｜🇺🇸 Los Angeles3"
+    type: vless
+    server: c19s3.portablesubmarines.com
+    port: 443
+    uuid: 71461c12-1315-44f2-9750-c9e9723247a0
+    flow: "xtls-rprx-vision"
+    encryption: ""
+    network: "tcp"
+    tls: true
+    servername: "portal.citygrainla.com"
+    client-fingerprint: "chrome"
+    reality-opts:
+      public-key: "BlSccfT5tvDIOS7v9VaPd0ulUNhUdvlMjGiNzDNDUHE"
+      short-id: "051f20c2344a2dfd"
+
+  - name: "S4｜🇯🇵 Osaka"
+    type: vless
+    server: c19s4.portablesubmarines.com
+    port: 443
+    uuid: "71461c12-1315-44f2-9750-c9e9723247a0"
+    flow: "xtls-rprx-vision"
+    encryption: ""
+    network: "tcp"
+    tls: true
+    servername: "portal.citygrainla.com"
+    client-fingerprint: "chrome"
+    reality-opts:
+      public-key: "BlSccfT5tvDIOS7v9VaPd0ulUNhUdvlMjGiNzDNDUHE"
+      short-id: "051f20c2344a2dfd"
+
+  - name: "S5｜🇳🇱 Amsterdam"
+    type: vless
+    server: c19s5.portablesubmarines.com
+    port: 443
+    uuid: "71461c12-1315-44f2-9750-c9e9723247a0"
+    flow: "xtls-rprx-vision"
+    encryption: ""
+    network: "tcp"
+    tls: true
+    servername: "portal.citygrainla.com"
+    client-fingerprint: "chrome"
+    reality-opts:
+      public-key: "BlSccfT5tvDIOS7v9VaPd0ulUNhUdvlMjGiNzDNDUHE"
+      short-id: "051f20c2344a2dfd"
+
+  - name: "S801｜🇺🇸 Los Angeles"
+    type: vless
+    server: c19s801.portablesubmarines.com
+    port: 443
+    uuid: "71461c12-1315-44f2-9750-c9e9723247a0"
+    flow: "xtls-rprx-vision"
+    encryption: ""
+    network: "tcp"
+    tls: true
+    servername: "portal.citygrainla.com"
+    client-fingerprint: "chrome"
+    reality-opts:
+      public-key: "BlSccfT5tvDIOS7v9VaPd0ulUNhUdvlMjGiNzDNDUHE"
+      short-id: "051f20c2344a2dfd"
+
+
+x-nodes: &nodes ["S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3", "S4｜🇯🇵 Osaka", "S5｜🇳🇱 Amsterdam", "S801｜🇺🇸 Los Angeles"]
+x-common-select: &common-select ["🚀 代理选择", "🏠 直接连接", "⚡ 自动优选", "🚑 故障转移", "⚖️ 负载均衡(散列)", "☁️ 负载均衡(轮询)", "S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3", "S4｜🇯🇵 Osaka", "S5｜🇳🇱 Amsterdam"]
+
+proxy-groups:
+  - {name: "🚀 代理选择", type: select, proxies: ["⚡ 自动优选", "🇺🇸 美国智能", "🚑 故障转移", "⚖️ 负载均衡(散列)", "☁️ 负载均衡(轮询)", "S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3", "S4｜🇯🇵 Osaka", "S5｜🇳🇱 Amsterdam", "S801｜🇺🇸 Los Angeles", DIRECT]}
+  - {name: "⚡ 自动优选", type: url-test, proxies: *nodes, url: "https://www.google.com/generate_204", interval: 600, tolerance: 50}
+  - {name: "🇺🇸 美国智能", type: url-test, proxies: ["S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3"], url: "https://www.google.com/generate_204", interval: 600, tolerance: 50}
+  - {name: "🚑 故障转移", type: fallback, proxies: *nodes, url: "https://www.google.com/generate_204", interval: 600}
+  - {name: "⚖️ 负载均衡(散列)", type: load-balance, proxies: *nodes, url: "https://www.google.com/generate_204", interval: 600, strategy: consistent-hashing}
+  - {name: "☁️ 负载均衡(轮询)", type: load-balance, proxies: *nodes, url: "https://www.google.com/generate_204", interval: 600, strategy: round-robin}
+  - {name: "🌐 海外媒体", type: select, proxies: ["🇺🇸 美国智能", "S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3"], url: "https://www.google.com/generate_204", interval: 600}
+  - {name: "🤖 AI 服务", type: select, proxies: ["🇺🇸 美国智能", "S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3"], url: "https://www.google.com/generate_204", interval: 600}
+  - {name: "🏰 Disney+", type: select, proxies: ["🇺🇸 美国智能", "S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3"], url: "https://www.google.com/generate_204", interval: 600}
+  - {name: "🎬 Netflix", type: select, proxies: ["🇺🇸 美国智能", "S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3"], url: "https://www.google.com/generate_204", interval: 600}
+  - {name: "▶️ YouTube", type: select, proxies: ["🇺🇸 美国智能", "S1｜🇺🇸 Los Angeles", "S2｜🇺🇸 Los Angeles", "S3｜🇺🇸 Los Angeles3"], url: "https://www.google.com/generate_204", interval: 600}
+  - {name: "📦 PikPak", type: select, proxies: *common-select}
+  - {name: "✈️ Telegram", type: select, proxies: *common-select}
+  - {name: "🔎 Google", type: select, proxies: *common-select}
+  - {name: "🍎 Apple", type: select, proxies: *common-select}
+  - {name: "🪟 Microsoft", type: select, proxies: *common-select}
+  - {name: "🎮 Steam", type: select, proxies: *common-select}
+  - {name: "🚫 广告过滤", type: select, proxies: [REJECT, DIRECT]}
+  - {name: "🏠 直接连接", type: select, proxies: [DIRECT]}
+  - {name: "⛔ 请求拦截", type: select, proxies: [REJECT, DIRECT]}
+  - {name: "🐬 自定义直连", type: select, proxies: *common-select}
+  - {name: "🐳 自定义代理", type: select, proxies: *common-select}
+  - {name: "🐟 漏网之鱼", type: select, proxies: *common-select}
+
+rule-providers:
+  AI: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/BrianLi-CN/surge-js/refs/heads/main/rule/AI.yaml", path: ./ruleset/custom/AI.yaml, interval: 86400}
+  PikPak: {type: http, behavior: classical, format: yaml, url: "https://github.com/blackmatrix7/ios_rule_script/blob/master/rule/Clash/PikPak/PikPak.yaml", path: ./ruleset/blackmatrix7/PikPak.yaml, interval: 86400}
+  AdvertisingLite: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite.yaml", path: ./ruleset/blackmatrix7/AdvertisingLite.yaml, interval: 86400}
+  AdvertisingLite_Domain: {type: http, behavior: domain, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/AdvertisingLite/AdvertisingLite_Domain.txt", path: ./ruleset/blackmatrix7/AdvertisingLite_Domain.txt, interval: 86400}
+  ZhihuAds: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/ZhihuAds/ZhihuAds.yaml", path: ./ruleset/blackmatrix7/ZhihuAds.yaml, interval: 86400}
+  Steam: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Steam/Steam.yaml", path: ./ruleset/blackmatrix7/Steam.yaml, interval: 86400}
+  SteamCN: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/SteamCN/SteamCN.yaml", path: ./ruleset/blackmatrix7/SteamCN.yaml, interval: 86400}
+  Direct: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Direct/Direct.yaml", path: ./ruleset/blackmatrix7/Direct.yaml, interval: 86400}
+  YouTubeMusic: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTubeMusic/YouTubeMusic.yaml", path: ./ruleset/blackmatrix7/YouTubeMusic.yaml, interval: 86400}
+  YouTube: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/YouTube/YouTube.yaml", path: ./ruleset/blackmatrix7/YouTube.yaml, interval: 86400}
+  Google: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Google/Google.yaml", path: ./ruleset/blackmatrix7/Google.yaml, interval: 86400}
+  Apple: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Apple/Apple.yaml", path: ./ruleset/blackmatrix7/Apple.yaml, interval: 86400}
+  Microsoft: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Microsoft/Microsoft.yaml", path: ./ruleset/blackmatrix7/Microsoft.yaml, interval: 86400}
+  Disney: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Disney/Disney.yaml", path: ./ruleset/blackmatrix7/Disney.yaml, interval: 86400}
+  BiliBiliIntl: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BiliBiliIntl/BiliBiliIntl.yaml", path: ./ruleset/blackmatrix7/BiliBiliIntl.yaml, interval: 86400}
+  BiliBili: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/BiliBili/BiliBili.yaml", path: ./ruleset/blackmatrix7/BiliBili.yaml, interval: 86400}
+  Bahamut: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Bahamut/Bahamut.yaml", path: ./ruleset/blackmatrix7/Bahamut.yaml, interval: 86400}
+  Anime: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Anime/Anime.yaml", path: ./ruleset/blackmatrix7/Anime.yaml, interval: 86400}
+  TikTok: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TikTok/TikTok.yaml", path: ./ruleset/blackmatrix7/TikTok.yaml, interval: 86400}
+  Netflix: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Netflix/Netflix.yaml", path: ./ruleset/blackmatrix7/Netflix.yaml, interval: 86400}
+  Espn: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Espn/Espn.yaml", path: ./ruleset/blackmatrix7/Espn.yaml, interval: 86400}
+  Twitter: {type: http, behavior: classical, format: yaml, url: "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Twitter/Twitter.yaml", path: ./ruleset/blackmatrix7/Twitter.yaml, interval: 86400}
+  private: {type: http, behavior: domain, format: text, url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/private.txt", path: ./ruleset/Loyalsoldier/private.txt, interval: 86400}
+  cncidr: {type: http, behavior: ipcidr, format: text, url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/cncidr.txt", path: ./ruleset/Loyalsoldier/cncidr.txt, interval: 86400}
+  telegramcidr: {type: http, behavior: ipcidr, format: text, url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/telegramcidr.txt", path: ./ruleset/Loyalsoldier/telegramcidr.txt, interval: 86400}
+  proxy: {type: http, behavior: domain, format: text, url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt", path: ./ruleset/Loyalsoldier/proxy.txt, interval: 86400}
+  direct: {type: http, behavior: domain, format: text, url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt", path: ./ruleset/Loyalsoldier/direct.txt, interval: 86400}
+
+rules:
+  # IP 规则只匹配已经是 IP 的请求，不为待代理域名额外触发本地 DNS。
+  - IP-CIDR,10.0.0.0/8,🏠 直接连接,no-resolve
+  - IP-CIDR,100.64.0.0/10,🏠 直接连接,no-resolve
+  - IP-CIDR,127.0.0.0/8,🏠 直接连接,no-resolve
+  - IP-CIDR,169.254.0.0/16,🏠 直接连接,no-resolve
+  - IP-CIDR,172.16.0.0/12,🏠 直接连接,no-resolve
+  - IP-CIDR,192.168.0.0/16,🏠 直接连接,no-resolve
+  - DOMAIN,buy.itunes.apple.com,🇺🇸 美国智能
+  - DOMAIN-SUFFIX,product.api.espn.com,🌐 海外媒体
+  - DOMAIN-SUFFIX,watch-cdn.product.api.espn.com,🌐 海外媒体
+  - DOMAIN-SUFFIX,a.espncdn.com,🌐 海外媒体
+  - DOMAIN-SUFFIX,vod.espn.com,🌐 海外媒体
+  - RULE-SET,AI,🤖 AI 服务
+  - RULE-SET,PikPak,📦 PikPak
+  - RULE-SET,AdvertisingLite,🚫 广告过滤
+  - RULE-SET,AdvertisingLite_Domain,🚫 广告过滤
+  - RULE-SET,ZhihuAds,🚫 广告过滤
+  - RULE-SET,Steam,🎮 Steam
+  - RULE-SET,SteamCN,🎮 Steam
+  - RULE-SET,Direct,🏠 直接连接
+  - RULE-SET,YouTubeMusic,▶️ YouTube
+  - RULE-SET,YouTube,▶️ YouTube
+  - RULE-SET,Google,🔎 Google
+  - RULE-SET,Apple,🍎 Apple
+  - RULE-SET,Microsoft,🪟 Microsoft
+  - RULE-SET,Disney,🏰 Disney+
+  - RULE-SET,BiliBiliIntl,🌐 海外媒体
+  - RULE-SET,BiliBili,🏠 直接连接
+  - RULE-SET,Bahamut,🌐 海外媒体
+  - RULE-SET,Anime,🌐 海外媒体
+  - RULE-SET,TikTok,🌐 海外媒体
+  - RULE-SET,Netflix,🎬 Netflix
+  - RULE-SET,Espn,🌐 海外媒体
+  - RULE-SET,Twitter,🌐 海外媒体
+  - RULE-SET,private,🏠 直接连接
+  - RULE-SET,cncidr,🏠 直接连接,no-resolve
+  - RULE-SET,telegramcidr,✈️ Telegram,no-resolve
+  - RULE-SET,proxy,🚀 代理选择
+  - RULE-SET,direct,🏠 直接连接
+  - MATCH,🐟 漏网之鱼
